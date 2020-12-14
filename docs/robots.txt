@@ -1,0 +1,2 @@
+User-agent: *
+Sitemap: http://wu0407.github.io/sitemap.xml
