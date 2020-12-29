@@ -21,8 +21,10 @@
     <div class="post-summary">
       {{ .Summary }}
     </div>
+    {{- if .Truncated }}
     <div class="read-more">
       <a href="{{ .RelPermalink }}" class="read-more-link">{{ T "readMore" }}</a>
     </div>
+    {{- end }}
   </div>
 </article>
