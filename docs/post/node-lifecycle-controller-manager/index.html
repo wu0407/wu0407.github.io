@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Node Lifecycle Controller Manager源码解析 - xiaoqing</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="xiaoqing" /><meta name="description" content="kubernetes Node Lifecycle Controller Manager源码解析" /><meta name="keywords" content="kubernetes, controller manager, node, Node Lifecycle Controller Manager, 源码解析" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.79.1 with theme even" />
+
+
+<link rel="canonical" href="https://midbai.com/post/node-lifecycle-controller-manager/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.c7bc1becf36bcf6a9ebd25d2947e43a2eb745ddb0c9a32b43126fd7fa460c351.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="Node Lifecycle Controller Manager源码解析" />
+<meta property="og:description" content="kubernetes Node Lifecycle Controller Manager源码解析" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://midbai.com/post/node-lifecycle-controller-manager/" />
+<meta property="article:published_time" content="2020-12-26T20:50:47+08:00" />
+<meta property="article:modified_time" content="2020-12-26T20:50:47+08:00" />
+<meta itemprop="name" content="Node Lifecycle Controller Manager源码解析">
+<meta itemprop="description" content="kubernetes Node Lifecycle Controller Manager源码解析">
+<meta itemprop="datePublished" content="2020-12-26T20:50:47+08:00" />
+<meta itemprop="dateModified" content="2020-12-26T20:50:47+08:00" />
+<meta itemprop="wordCount" content="17607">
+
+
+
+<meta itemprop="keywords" content="kubernetes,源码解析," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Node Lifecycle Controller Manager源码解析"/>
+<meta name="twitter:description" content="kubernetes Node Lifecycle Controller Manager源码解析"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">xiaoqing blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">Categories</li>
+      </a><a href="/categories/kubernetes/">
+        <li class="mobile-menu-item">Kubernetes</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">xiaoqing blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">Categories</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/kubernetes/">Kubernetes</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">Node Lifecycle Controller Manager源码解析</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2020-12-26 </span>
+        <div class="post-category">
+            <a href="/categories/kubernetes/"> kubernetes </a>
+            </div>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Contents</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#启动过程">启动过程</a></li>
+        <li><a href="#相关的命令行参数">相关的命令行参数</a></li>
+        <li><a href="#数据结构">数据结构</a></li>
+        <li><a href="#队列">队列</a></li>
+        <li><a href="#controller初始化">controller初始化</a></li>
+        <li><a href="#运行">运行</a>
+          <ul>
+            <li><a href="#donodeprocessingpassworker">doNodeProcessingPassWorker</a></li>
+            <li><a href="#dopodprocessingworker">doPodProcessingWorker</a></li>
+            <li><a href="#执行驱逐pod">执行驱逐pod</a></li>
+            <li><a href="#主动扫描node健康状态monitornodehealth">主动扫描node健康状态monitorNodeHealth</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <p>Node Lifecycle Controller根据node的lease和node status更新时间，决定是否驱逐node上的pod或设置taint，设置node ready condition为unknown。</p>
+<p>并且根据整个集群状态和zone里不同数量的unready node，设置不同的node速率-来添加taint或执行驱逐pod。</p>
+<p>该解析为kubernetes版本为1.18.6</p>
+<h2 id="启动过程">启动过程</h2>
+<p>controller manager创建一个goroutine启动Node Lifecycle controller，node lifecycle controller启动函数为<code>startNodeLifecycleController</code> 在cmd\kube-controller-manager\app\core.go。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">startNodeLifecycleController</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">ControllerContext</span><span class="p">)</span> <span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span><span class="p">,</span> <span class="kt">bool</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">lifecycleController</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">lifecyclecontroller</span><span class="p">.</span><span class="nf">NewNodeLifecycleController</span><span class="p">(</span>
+		<span class="nx">ctx</span><span class="p">.</span><span class="nx">InformerFactory</span><span class="p">.</span><span class="nf">Coordination</span><span class="p">().</span><span class="nf">V1</span><span class="p">().</span><span class="nf">Leases</span><span class="p">(),</span>
+		<span class="nx">ctx</span><span class="p">.</span><span class="nx">InformerFactory</span><span class="p">.</span><span class="nf">Core</span><span class="p">().</span><span class="nf">V1</span><span class="p">().</span><span class="nf">Pods</span><span class="p">(),</span>
+		<span class="nx">ctx</span><span class="p">.</span><span class="nx">InformerFactory</span><span class="p">.</span><span class="nf">Core</span><span class="p">().</span><span class="nf">V1</span><span class="p">().</span><span class="nf">Nodes</span><span class="p">(),</span>
+		<span class="nx">ctx</span><span class="p">.</span><span class="nx">InformerFactory</span><span class="p">.</span><span class="nf">Apps</span><span class="p">().</span><span class="nf">V1</span><span class="p">().</span><span class="nf">DaemonSets</span><span class="p">(),</span>
+		<span class="c1">// node lifecycle controller uses existing cluster role from node-controller
+</span><span class="c1"></span>		<span class="nx">ctx</span><span class="p">.</span><span class="nx">ClientBuilder</span><span class="p">.</span><span class="nf">ClientOrDie</span><span class="p">(</span><span class="s">&#34;node-controller&#34;</span><span class="p">),</span>
+		<span class="nx">ctx</span><span class="p">.</span><span class="nx">ComponentConfig</span><span class="p">.</span><span class="nx">KubeCloudShared</span><span class="p">.</span><span class="nx">NodeMonitorPeriod</span><span class="p">.</span><span class="nx">Duration</span><span class="p">,</span> <span class="c1">//默认为5s 取决于--node-monitor-period
+</span><span class="c1"></span>		<span class="nx">ctx</span><span class="p">.</span><span class="nx">ComponentConfig</span><span class="p">.</span><span class="nx">NodeLifecycleController</span><span class="p">.</span><span class="nx">NodeStartupGracePeriod</span><span class="p">.</span><span class="nx">Duration</span><span class="p">,</span><span class="c1">//默认为1min 取决于--node-startup-grace-period
+</span><span class="c1"></span>		<span class="nx">ctx</span><span class="p">.</span><span class="nx">ComponentConfig</span><span class="p">.</span><span class="nx">NodeLifecycleController</span><span class="p">.</span><span class="nx">NodeMonitorGracePeriod</span><span class="p">.</span><span class="nx">Duration</span><span class="p">,</span><span class="c1">//默认为40s 取决于--node-monitor-grace-period
+</span><span class="c1"></span>		<span class="nx">ctx</span><span class="p">.</span><span class="nx">ComponentConfig</span><span class="p">.</span><span class="nx">NodeLifecycleController</span><span class="p">.</span><span class="nx">PodEvictionTimeout</span><span class="p">.</span><span class="nx">Duration</span><span class="p">,</span><span class="c1">//默认为5min 取决于--pod-eviction-timeout
+</span><span class="c1"></span>		<span class="nx">ctx</span><span class="p">.</span><span class="nx">ComponentConfig</span><span class="p">.</span><span class="nx">NodeLifecycleController</span><span class="p">.</span><span class="nx">NodeEvictionRate</span><span class="p">,</span><span class="c1">//默认为0.1 取决于--node-eviction-rate
+</span><span class="c1"></span>		<span class="nx">ctx</span><span class="p">.</span><span class="nx">ComponentConfig</span><span class="p">.</span><span class="nx">NodeLifecycleController</span><span class="p">.</span><span class="nx">SecondaryNodeEvictionRate</span><span class="p">,</span><span class="c1">//默认为0.01 取决于--secondary-node-eviction-rate
+</span><span class="c1"></span>		<span class="nx">ctx</span><span class="p">.</span><span class="nx">ComponentConfig</span><span class="p">.</span><span class="nx">NodeLifecycleController</span><span class="p">.</span><span class="nx">LargeClusterSizeThreshold</span><span class="p">,</span><span class="c1">//默认为50 取决于--large-cluster-size-threshold
+</span><span class="c1"></span>		<span class="nx">ctx</span><span class="p">.</span><span class="nx">ComponentConfig</span><span class="p">.</span><span class="nx">NodeLifecycleController</span><span class="p">.</span><span class="nx">UnhealthyZoneThreshold</span><span class="p">,</span><span class="c1">//默认为0.55 取决于--unhealthy-zone-threshold
+</span><span class="c1"></span>		<span class="nx">ctx</span><span class="p">.</span><span class="nx">ComponentConfig</span><span class="p">.</span><span class="nx">NodeLifecycleController</span><span class="p">.</span><span class="nx">EnableTaintManager</span><span class="p">,</span> <span class="c1">//默认为true 取决于 --enable-taint-manager
+</span><span class="c1"></span>	<span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="nx">err</span>
+	<span class="p">}</span>
+	<span class="k">go</span> <span class="nx">lifecycleController</span><span class="p">.</span><span class="nf">Run</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Stop</span><span class="p">)</span>
+	<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="相关的命令行参数">相关的命令行参数</h2>
+<p>Node Lifecycle controller相关的命令行参数有这些</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">      --enable-taint-manager                                                                                                
+                WARNING: Beta feature. If set to true enables NoExecute Taints and will evict all not-tolerating Pod running on
+                Nodes tainted with this kind of Taints. (default true)
+                启用在unready时候为node添加taint和ready时候移除相关taint和进行驱逐pod不能容忍NoExecute Taints
+      --large-cluster-size-threshold int32                                                                                  
+                Number of nodes from which NodeController treats the cluster as large for the eviction logic purposes.
+                --secondary-node-eviction-rate is implicitly overridden to 0 for clusters this size or smaller. (default 50)
+                node数量超过多少认为是large-cluster
+      --node-eviction-rate float32                                                                                          
+                Number of nodes per second on which pods are deleted in case of node failure when a zone is healthy (see
+                --unhealthy-zone-threshold for definition of healthy/unhealthy). Zone refers to entire cluster in non-multizone
+                clusters. (default 0.1)
+                在zone healthy时候(unhealthy node数量比小于 --unhealthy-zone-threshold）的驱逐速率
+      --node-monitor-grace-period duration                                                                                  
+                Amount of time which we allow running Node to be unresponsive before marking it unhealthy. Must be N times more
+                than kubelet&#39;s nodeStatusUpdateFrequency, where N means number of retries allowed for kubelet to post node
+                status. (default 40s)
+                多久node没有响应认为node为unhealthy
+      --node-startup-grace-period duration                                                                                  
+                Amount of time which we allow starting Node to be unresponsive before marking it unhealthy. (default 1m0s)
+                多久允许刚启动的node未响应，认为unhealthy
+      --pod-eviction-timeout duration                                                                                       
+                The grace period for deleting pods on failed nodes. (default 5m0s)
+                当node unhealthy时候多久删除上面的pod（只在taint manager未启用时候生效）
+      --secondary-node-eviction-rate float32                                                                                
+                Number of nodes per second on which pods are deleted in case of node failure when a zone is unhealthy (see
+                --unhealthy-zone-threshold for definition of healthy/unhealthy). Zone refers to entire cluster in non-multizone
+                clusters. This value is implicitly overridden to 0 if the cluster size is smaller than
+                --large-cluster-size-threshold. (default 0.01)
+                当zone unhealthy时候，一秒内多少个node进行驱逐node上pod
+      --unhealthy-zone-threshold float32                                                                                    
+                Fraction of Nodes in a zone which needs to be not Ready (minimum 3) for zone to be treated as unhealthy. 
+                (default 0.55)
+                多少比例的unhealthy node认为zone unhealthy
+      --node-monitor-period duration                                                                                        
+                The period for syncing NodeStatus in NodeController. (default 5s)
+                更新release资源的周期
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="数据结构">数据结构</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">Controller</span> <span class="kd">struct</span> <span class="p">{</span>
+
+	<span class="o">.........</span>
+    <span class="c1">//周期性主动扫描到的node存在这里,用于对比新增加的node、删除的node
+</span><span class="c1"></span>	<span class="nx">knownNodeSet</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Node</span>
+	<span class="c1">// per Node map storing last observed health together with a local time when it was observed.
+</span><span class="c1"></span>    <span class="c1">//周期性扫描node，从shareinformer获取node status保存在这里
+</span><span class="c1"></span>	<span class="nx">nodeHealthMap</span> <span class="o">*</span><span class="nx">nodeHealthMap</span>
+
+	<span class="c1">// evictorLock protects zonePodEvictor and zoneNoExecuteTainter.
+</span><span class="c1"></span>	<span class="c1">// TODO(#83954): API calls shouldn&#39;t be executed under the lock.
+</span><span class="c1"></span>	<span class="nx">evictorLock</span>     <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span>
+	<span class="c1">// workers that evicts pods from unresponsive nodes.
+</span><span class="c1"></span>	<span class="c1">//未启用taints manager时使用，存放node上pod是否已经执行驱逐的状态， 从这读取node eviction的状态是evicted、tobeeviced
+</span><span class="c1"></span>	<span class="nx">nodeEvictionMap</span> <span class="o">*</span><span class="nx">nodeEvictionMap</span>
+	<span class="c1">//未启用taints manager时使用， zone的需要pod evictor的node列表
+</span><span class="c1"></span>	<span class="nx">zonePodEvictor</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">scheduler</span><span class="p">.</span><span class="nx">RateLimitedTimedQueue</span>
+	<span class="c1">// workers that are responsible for tainting nodes.
+</span><span class="c1"></span>	<span class="c1">//启用taints manage时使用，存放需要更新taint的unready node列表--令牌桶队列
+</span><span class="c1"></span>	<span class="nx">zoneNoExecuteTainter</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">scheduler</span><span class="p">.</span><span class="nx">RateLimitedTimedQueue</span>
+
+	<span class="c1">//存放每个zone的健康状态,有stateFullDisruption、statePartialDisruption、stateNormal、stateInitial
+</span><span class="c1"></span>	<span class="nx">zoneStates</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="nx">ZoneState</span>
+
+	<span class="c1">// Value controlling Controller monitoring period, i.e. how often does Controller
+</span><span class="c1"></span>	<span class="c1">// check node health signal posted from kubelet. This value should be lower than
+</span><span class="c1"></span>	<span class="c1">// nodeMonitorGracePeriod.
+</span><span class="c1"></span>	<span class="c1">// TODO: Change node health monitor to watch based.
+</span><span class="c1"></span>    <span class="c1">// 主动扫描所有node的周期
+</span><span class="c1"></span>	<span class="nx">nodeMonitorPeriod</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span>
+
+	<span class="c1">// When node is just created, e.g. cluster bootstrap or node creation, we give
+</span><span class="c1"></span>	<span class="c1">// a longer grace period.
+</span><span class="c1"></span>    <span class="c1">// node刚注册时候的,认为node unready的超时时间
+</span><span class="c1"></span>	<span class="nx">nodeStartupGracePeriod</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span>
+
+	<span class="c1">// Controller will not proactively sync node health, but will monitor node
+</span><span class="c1"></span>	<span class="c1">// health signal updated from kubelet. There are 2 kinds of node healthiness
+</span><span class="c1"></span>	<span class="c1">// signals: NodeStatus and NodeLease. NodeLease signal is generated only when
+</span><span class="c1"></span>	<span class="c1">// NodeLease feature is enabled. If it doesn&#39;t receive update for this amount
+</span><span class="c1"></span>	<span class="c1">// of time, it will start posting &#34;NodeReady==ConditionUnknown&#34;. The amount of
+</span><span class="c1"></span>	<span class="c1">// time before which Controller start evicting pods is controlled via flag
+</span><span class="c1"></span>	<span class="c1">// &#39;pod-eviction-timeout&#39;.
+</span><span class="c1"></span>	<span class="c1">// Note: be cautious when changing the constant, it must work with
+</span><span class="c1"></span>	<span class="c1">// nodeStatusUpdateFrequency in kubelet and renewInterval in NodeLease
+</span><span class="c1"></span>	<span class="c1">// controller. The node health signal update frequency is the minimal of the
+</span><span class="c1"></span>	<span class="c1">// two.
+</span><span class="c1"></span>	<span class="c1">// There are several constraints:
+</span><span class="c1"></span>	<span class="c1">// 1. nodeMonitorGracePeriod must be N times more than  the node health signal
+</span><span class="c1"></span>	<span class="c1">//    update frequency, where N means number of retries allowed for kubelet to
+</span><span class="c1"></span>	<span class="c1">//    post node status/lease. It is pointless to make nodeMonitorGracePeriod
+</span><span class="c1"></span>	<span class="c1">//    be less than the node health signal update frequency, since there will
+</span><span class="c1"></span>	<span class="c1">//    only be fresh values from Kubelet at an interval of node health signal
+</span><span class="c1"></span>	<span class="c1">//    update frequency. The constant must be less than podEvictionTimeout.
+</span><span class="c1"></span>	<span class="c1">// 2. nodeMonitorGracePeriod can&#39;t be too large for user experience - larger
+</span><span class="c1"></span>	<span class="c1">//    value takes longer for user to see up-to-date node health.
+</span><span class="c1"></span>    <span class="c1">// node的不更新status或者lease的持续时间,超过这个时间会将node的ready condition改为unknown
+</span><span class="c1"></span>	<span class="nx">nodeMonitorGracePeriod</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span>
+
+    <span class="c1">// node unready之后多久执行驱逐node上的pod
+</span><span class="c1"></span>	<span class="nx">podEvictionTimeout</span>          <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span>
+    <span class="c1">// zone正常时候的 每秒多少个node去执行驱逐/添加taint
+</span><span class="c1"></span>	<span class="nx">evictionLimiterQPS</span>          <span class="kt">float32</span>
+    <span class="c1">// zone为statePartialDisruption时候且节点数量大于largeClusterThreshold 每秒多少个node去执行驱逐/添加taint
+</span><span class="c1"></span>	<span class="nx">secondaryEvictionLimiterQPS</span> <span class="kt">float32</span>
+    <span class="c1">// 多少个节点数认为大集群, 这个数值用来判断是否在zone为statePartialDisruption时候,将每秒多少个node去执行驱逐/添加taint设置为0
+</span><span class="c1"></span>	<span class="nx">largeClusterThreshold</span>       <span class="kt">int32</span>
+    <span class="c1">// unready node超出多少比例,认为zone是statePartialDisruption
+</span><span class="c1"></span>	<span class="nx">unhealthyZoneThreshold</span>      <span class="kt">float32</span>
+
+	<span class="c1">// if set to true Controller will start TaintManager that will evict Pods from
+</span><span class="c1"></span>	<span class="c1">// tainted nodes, if they&#39;re not tolerated.
+</span><span class="c1"></span>	<span class="nx">runTaintManager</span> <span class="kt">bool</span>
+
+	<span class="c1">// 不限速的workqueue
+</span><span class="c1"></span>	<span class="nx">nodeUpdateQueue</span> <span class="nx">workqueue</span><span class="p">.</span><span class="nx">Interface</span>
+    <span class="c1">// 具有限速和指数回退策略的workqueue
+</span><span class="c1"></span>	<span class="nx">podUpdateQueue</span>  <span class="nx">workqueue</span><span class="p">.</span><span class="nx">RateLimitingInterface</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="队列">队列</h2>
+<p>这里使用的队列有:</p>
+<p>workqueue</p>
+<ul>
+<li>nodeUpdateQueue</li>
+<li>podUpdateQueue</li>
+</ul>
+<p>RateLimitedTimedQueue</p>
+<ul>
+<li>zonePodEvictor</li>
+<li>zoneNoExecuteTainter</li>
+</ul>
+<p>队列后面再详细深入解析</p>
+<h2 id="controller初始化">controller初始化</h2>
+<p>初始化做这几个事情：</p>
+<ol>
+<li>初始化数据结构和设置各个字段值</li>
+<li>设置监听pod事件的handler，将pod item添加到podUpdateQueue里（如果启用taint manager，还会添加taint manager相关的handler，将pod添加到taint manager里的podUpdateQueue）</li>
+<li>pod sharedinformer中添加新的 indexers，用于查找node的上的所有pods。</li>
+<li>初始化event recorder，用于发送event到apiserver</li>
+<li>启用taint manager情况下，初始化taintManager，并添加node事件的handler&ndash;由taint manager处理</li>
+<li>添加node事件handler&ndash;将node添加到nodeUpdateQueue</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span><span class="lnt">103
+</span><span class="lnt">104
+</span><span class="lnt">105
+</span><span class="lnt">106
+</span><span class="lnt">107
+</span><span class="lnt">108
+</span><span class="lnt">109
+</span><span class="lnt">110
+</span><span class="lnt">111
+</span><span class="lnt">112
+</span><span class="lnt">113
+</span><span class="lnt">114
+</span><span class="lnt">115
+</span><span class="lnt">116
+</span><span class="lnt">117
+</span><span class="lnt">118
+</span><span class="lnt">119
+</span><span class="lnt">120
+</span><span class="lnt">121
+</span><span class="lnt">122
+</span><span class="lnt">123
+</span><span class="lnt">124
+</span><span class="lnt">125
+</span><span class="lnt">126
+</span><span class="lnt">127
+</span><span class="lnt">128
+</span><span class="lnt">129
+</span><span class="lnt">130
+</span><span class="lnt">131
+</span><span class="lnt">132
+</span><span class="lnt">133
+</span><span class="lnt">134
+</span><span class="lnt">135
+</span><span class="lnt">136
+</span><span class="lnt">137
+</span><span class="lnt">138
+</span><span class="lnt">139
+</span><span class="lnt">140
+</span><span class="lnt">141
+</span><span class="lnt">142
+</span><span class="lnt">143
+</span><span class="lnt">144
+</span><span class="lnt">145
+</span><span class="lnt">146
+</span><span class="lnt">147
+</span><span class="lnt">148
+</span><span class="lnt">149
+</span><span class="lnt">150
+</span><span class="lnt">151
+</span><span class="lnt">152
+</span><span class="lnt">153
+</span><span class="lnt">154
+</span><span class="lnt">155
+</span><span class="lnt">156
+</span><span class="lnt">157
+</span><span class="lnt">158
+</span><span class="lnt">159
+</span><span class="lnt">160
+</span><span class="lnt">161
+</span><span class="lnt">162
+</span><span class="lnt">163
+</span><span class="lnt">164
+</span><span class="lnt">165
+</span><span class="lnt">166
+</span><span class="lnt">167
+</span><span class="lnt">168
+</span><span class="lnt">169
+</span><span class="lnt">170
+</span><span class="lnt">171
+</span><span class="lnt">172
+</span><span class="lnt">173
+</span><span class="lnt">174
+</span><span class="lnt">175
+</span><span class="lnt">176
+</span><span class="lnt">177
+</span><span class="lnt">178
+</span><span class="lnt">179
+</span><span class="lnt">180
+</span><span class="lnt">181
+</span><span class="lnt">182
+</span><span class="lnt">183
+</span><span class="lnt">184
+</span><span class="lnt">185
+</span><span class="lnt">186
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// NewNodeLifecycleController returns a new taint controller.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">NewNodeLifecycleController</span><span class="p">(</span>
+	<span class="nx">leaseInformer</span> <span class="nx">coordinformers</span><span class="p">.</span><span class="nx">LeaseInformer</span><span class="p">,</span>
+	<span class="nx">podInformer</span> <span class="nx">coreinformers</span><span class="p">.</span><span class="nx">PodInformer</span><span class="p">,</span>
+	<span class="nx">nodeInformer</span> <span class="nx">coreinformers</span><span class="p">.</span><span class="nx">NodeInformer</span><span class="p">,</span>
+	<span class="nx">daemonSetInformer</span> <span class="nx">appsv1informers</span><span class="p">.</span><span class="nx">DaemonSetInformer</span><span class="p">,</span>
+	<span class="nx">kubeClient</span> <span class="nx">clientset</span><span class="p">.</span><span class="nx">Interface</span><span class="p">,</span>
+	<span class="nx">nodeMonitorPeriod</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span><span class="p">,</span>
+	<span class="nx">nodeStartupGracePeriod</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span><span class="p">,</span>
+	<span class="nx">nodeMonitorGracePeriod</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span><span class="p">,</span>
+	<span class="nx">podEvictionTimeout</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span><span class="p">,</span>
+	<span class="nx">evictionLimiterQPS</span> <span class="kt">float32</span><span class="p">,</span>
+	<span class="nx">secondaryEvictionLimiterQPS</span> <span class="kt">float32</span><span class="p">,</span>
+	<span class="nx">largeClusterThreshold</span> <span class="kt">int32</span><span class="p">,</span>
+	<span class="nx">unhealthyZoneThreshold</span> <span class="kt">float32</span><span class="p">,</span>
+	<span class="nx">runTaintManager</span> <span class="kt">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">Controller</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+
+	<span class="k">if</span> <span class="nx">kubeClient</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">klog</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;kubeClient is nil when starting Controller&#34;</span><span class="p">)</span>
+	<span class="p">}</span>
+
+    <span class="c1">//初始化event recorder
+</span><span class="c1"></span>	<span class="nx">eventBroadcaster</span> <span class="o">:=</span> <span class="nx">record</span><span class="p">.</span><span class="nf">NewBroadcaster</span><span class="p">()</span>
+	<span class="nx">recorder</span> <span class="o">:=</span> <span class="nx">eventBroadcaster</span><span class="p">.</span><span class="nf">NewRecorder</span><span class="p">(</span><span class="nx">scheme</span><span class="p">.</span><span class="nx">Scheme</span><span class="p">,</span> <span class="nx">v1</span><span class="p">.</span><span class="nx">EventSource</span><span class="p">{</span><span class="nx">Component</span><span class="p">:</span> <span class="s">&#34;node-controller&#34;</span><span class="p">})</span>
+	<span class="nx">eventBroadcaster</span><span class="p">.</span><span class="nf">StartLogging</span><span class="p">(</span><span class="nx">klog</span><span class="p">.</span><span class="nx">Infof</span><span class="p">)</span>
+
+	<span class="nx">klog</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Sending events to api server.&#34;</span><span class="p">)</span>
+	<span class="nx">eventBroadcaster</span><span class="p">.</span><span class="nf">StartRecordingToSink</span><span class="p">(</span>
+		<span class="o">&amp;</span><span class="nx">v1core</span><span class="p">.</span><span class="nx">EventSinkImpl</span><span class="p">{</span>
+			<span class="nx">Interface</span><span class="p">:</span> <span class="nx">v1core</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">kubeClient</span><span class="p">.</span><span class="nf">CoreV1</span><span class="p">().</span><span class="nf">RESTClient</span><span class="p">()).</span><span class="nf">Events</span><span class="p">(</span><span class="s">&#34;&#34;</span><span class="p">),</span>
+		<span class="p">})</span>
+
+	<span class="k">if</span> <span class="nx">kubeClient</span><span class="p">.</span><span class="nf">CoreV1</span><span class="p">().</span><span class="nf">RESTClient</span><span class="p">().</span><span class="nf">GetRateLimiter</span><span class="p">()</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">ratelimiter</span><span class="p">.</span><span class="nf">RegisterMetricAndTrackRateLimiterUsage</span><span class="p">(</span><span class="s">&#34;node_lifecycle_controller&#34;</span><span class="p">,</span> <span class="nx">kubeClient</span><span class="p">.</span><span class="nf">CoreV1</span><span class="p">().</span><span class="nf">RESTClient</span><span class="p">().</span><span class="nf">GetRateLimiter</span><span class="p">())</span>
+	<span class="p">}</span>
+
+	<span class="nx">nc</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">Controller</span><span class="p">{</span>
+		<span class="nx">kubeClient</span><span class="p">:</span>                  <span class="nx">kubeClient</span><span class="p">,</span>
+		<span class="nx">now</span><span class="p">:</span>                         <span class="nx">metav1</span><span class="p">.</span><span class="nx">Now</span><span class="p">,</span>
+		<span class="nx">knownNodeSet</span><span class="p">:</span>                <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Node</span><span class="p">),</span>
+		<span class="nx">nodeHealthMap</span><span class="p">:</span>               <span class="nf">newNodeHealthMap</span><span class="p">(),</span> <span class="c1">//存放发现的node的health数据
+</span><span class="c1"></span>		<span class="nx">nodeEvictionMap</span><span class="p">:</span>             <span class="nf">newNodeEvictionMap</span><span class="p">(),</span>
+		<span class="nx">recorder</span><span class="p">:</span>                    <span class="nx">recorder</span><span class="p">,</span>
+		<span class="nx">nodeMonitorPeriod</span><span class="p">:</span>           <span class="nx">nodeMonitorPeriod</span><span class="p">,</span> <span class="c1">//默认为5s
+</span><span class="c1"></span>		<span class="nx">nodeStartupGracePeriod</span><span class="p">:</span>      <span class="nx">nodeStartupGracePeriod</span><span class="p">,</span> <span class="c1">//默认一分钟
+</span><span class="c1"></span>		<span class="nx">nodeMonitorGracePeriod</span><span class="p">:</span>      <span class="nx">nodeMonitorGracePeriod</span><span class="p">,</span> <span class="c1">//默认40s
+</span><span class="c1"></span>		<span class="nx">zonePodEvictor</span><span class="p">:</span>              <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">scheduler</span><span class="p">.</span><span class="nx">RateLimitedTimedQueue</span><span class="p">),</span><span class="c1">//未启用taints manage， zone里需要pod evicted的node列表，令牌桶速度限制队列
+</span><span class="c1"></span>		<span class="nx">zoneNoExecuteTainter</span><span class="p">:</span>        <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">scheduler</span><span class="p">.</span><span class="nx">RateLimitedTimedQueue</span><span class="p">),</span><span class="c1">//启用taints manage，需要更新taint的unhealy node列表，令牌桶速度限制队列
+</span><span class="c1"></span>		<span class="nx">nodesToRetry</span><span class="p">:</span>                <span class="nx">sync</span><span class="p">.</span><span class="nx">Map</span><span class="p">{},</span>
+		<span class="nx">zoneStates</span><span class="p">:</span>                  <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="nx">ZoneState</span><span class="p">),</span> <span class="c1">//存放每个zone的状态
+</span><span class="c1"></span>		<span class="nx">podEvictionTimeout</span><span class="p">:</span>          <span class="nx">podEvictionTimeout</span><span class="p">,</span> <span class="c1">//默认为5分钟
+</span><span class="c1"></span>		<span class="nx">evictionLimiterQPS</span><span class="p">:</span>          <span class="nx">evictionLimiterQPS</span><span class="p">,</span> <span class="c1">//默认为0.1
+</span><span class="c1"></span>		<span class="nx">secondaryEvictionLimiterQPS</span><span class="p">:</span> <span class="nx">secondaryEvictionLimiterQPS</span><span class="p">,</span> <span class="c1">//默认为0.01
+</span><span class="c1"></span>		<span class="nx">largeClusterThreshold</span><span class="p">:</span>       <span class="nx">largeClusterThreshold</span><span class="p">,</span> <span class="c1">//默认为50
+</span><span class="c1"></span>		<span class="nx">unhealthyZoneThreshold</span><span class="p">:</span>      <span class="nx">unhealthyZoneThreshold</span><span class="p">,</span> <span class="c1">//默认为0.55
+</span><span class="c1"></span>		<span class="nx">runTaintManager</span><span class="p">:</span>             <span class="nx">runTaintManager</span><span class="p">,</span> <span class="c1">//默认为true
+</span><span class="c1"></span>		<span class="nx">nodeUpdateQueue</span><span class="p">:</span>             <span class="nx">workqueue</span><span class="p">.</span><span class="nf">NewNamed</span><span class="p">(</span><span class="s">&#34;node_lifecycle_controller&#34;</span><span class="p">),</span> <span class="c1">//node变更时候，会加入队列，然后进行taint添加、更新
+</span><span class="c1"></span>		<span class="nx">podUpdateQueue</span><span class="p">:</span>              <span class="nx">workqueue</span><span class="p">.</span><span class="nf">NewNamedRateLimitingQueue</span><span class="p">(</span><span class="nx">workqueue</span><span class="p">.</span><span class="nf">DefaultControllerRateLimiter</span><span class="p">(),</span> <span class="s">&#34;node_lifecycle_controller_pods&#34;</span><span class="p">),</span> <span class="c1">//有队列和限速，pod变更时候，会加入队列，用来将pod进行驱逐或者pod condition 改为ready false
+</span><span class="c1"></span>	<span class="p">}</span>
+
+	<span class="nx">nc</span><span class="p">.</span><span class="nx">enterPartialDisruptionFunc</span> <span class="p">=</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">ReducedQPSFunc</span>
+	<span class="nx">nc</span><span class="p">.</span><span class="nx">enterFullDisruptionFunc</span> <span class="p">=</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">HealthyQPSFunc</span>
+	<span class="nx">nc</span><span class="p">.</span><span class="nx">computeZoneStateFunc</span> <span class="p">=</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">ComputeZoneState</span>
+
+	<span class="nx">podInformer</span><span class="p">.</span><span class="nf">Informer</span><span class="p">().</span><span class="nf">AddEventHandler</span><span class="p">(</span><span class="nx">cache</span><span class="p">.</span><span class="nx">ResourceEventHandlerFuncs</span><span class="p">{</span>
+		<span class="nx">AddFunc</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">obj</span> <span class="kd">interface</span><span class="p">{})</span> <span class="p">{</span>
+			<span class="nx">pod</span> <span class="o">:=</span> <span class="nx">obj</span><span class="p">.(</span><span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Pod</span><span class="p">)</span>
+			<span class="nx">nc</span><span class="p">.</span><span class="nf">podUpdated</span><span class="p">(</span><span class="kc">nil</span><span class="p">,</span> <span class="nx">pod</span><span class="p">)</span>
+			<span class="k">if</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">taintManager</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="nx">nc</span><span class="p">.</span><span class="nx">taintManager</span><span class="p">.</span><span class="nf">PodUpdated</span><span class="p">(</span><span class="kc">nil</span><span class="p">,</span> <span class="nx">pod</span><span class="p">)</span>
+			<span class="p">}</span>
+		<span class="p">},</span>
+		<span class="nx">UpdateFunc</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">prev</span><span class="p">,</span> <span class="nx">obj</span> <span class="kd">interface</span><span class="p">{})</span> <span class="p">{</span>
+			<span class="nx">prevPod</span> <span class="o">:=</span> <span class="nx">prev</span><span class="p">.(</span><span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Pod</span><span class="p">)</span>
+			<span class="nx">newPod</span> <span class="o">:=</span> <span class="nx">obj</span><span class="p">.(</span><span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Pod</span><span class="p">)</span>
+			<span class="nx">nc</span><span class="p">.</span><span class="nf">podUpdated</span><span class="p">(</span><span class="nx">prevPod</span><span class="p">,</span> <span class="nx">newPod</span><span class="p">)</span>
+			<span class="k">if</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">taintManager</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="nx">nc</span><span class="p">.</span><span class="nx">taintManager</span><span class="p">.</span><span class="nf">PodUpdated</span><span class="p">(</span><span class="nx">prevPod</span><span class="p">,</span> <span class="nx">newPod</span><span class="p">)</span>
+			<span class="p">}</span>
+		<span class="p">},</span>
+		<span class="nx">DeleteFunc</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">obj</span> <span class="kd">interface</span><span class="p">{})</span> <span class="p">{</span>
+			<span class="nx">pod</span><span class="p">,</span> <span class="nx">isPod</span> <span class="o">:=</span> <span class="nx">obj</span><span class="p">.(</span><span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Pod</span><span class="p">)</span>
+			<span class="c1">// We can get DeletedFinalStateUnknown instead of *v1.Pod here and we need to handle that correctly.
+</span><span class="c1"></span>			<span class="k">if</span> <span class="p">!</span><span class="nx">isPod</span> <span class="p">{</span>
+				<span class="nx">deletedState</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">obj</span><span class="p">.(</span><span class="nx">cache</span><span class="p">.</span><span class="nx">DeletedFinalStateUnknown</span><span class="p">)</span>
+				<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+					<span class="nx">klog</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;Received unexpected object: %v&#34;</span><span class="p">,</span> <span class="nx">obj</span><span class="p">)</span>
+					<span class="k">return</span>
+				<span class="p">}</span>
+				<span class="nx">pod</span><span class="p">,</span> <span class="nx">ok</span> <span class="p">=</span> <span class="nx">deletedState</span><span class="p">.</span><span class="nx">Obj</span><span class="p">.(</span><span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Pod</span><span class="p">)</span>
+				<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+					<span class="nx">klog</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;DeletedFinalStateUnknown contained non-Pod object: %v&#34;</span><span class="p">,</span> <span class="nx">deletedState</span><span class="p">.</span><span class="nx">Obj</span><span class="p">)</span>
+					<span class="k">return</span>
+				<span class="p">}</span>
+			<span class="p">}</span>
+			<span class="nx">nc</span><span class="p">.</span><span class="nf">podUpdated</span><span class="p">(</span><span class="nx">pod</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+			<span class="k">if</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">taintManager</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="nx">nc</span><span class="p">.</span><span class="nx">taintManager</span><span class="p">.</span><span class="nf">PodUpdated</span><span class="p">(</span><span class="nx">pod</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+			<span class="p">}</span>
+		<span class="p">},</span>
+	<span class="p">})</span>
+	<span class="nx">nc</span><span class="p">.</span><span class="nx">podInformerSynced</span> <span class="p">=</span> <span class="nx">podInformer</span><span class="p">.</span><span class="nf">Informer</span><span class="p">().</span><span class="nx">HasSynced</span>
+	<span class="c1">//sharedinformer中添加新的indexers
+</span><span class="c1"></span>	<span class="nx">podInformer</span><span class="p">.</span><span class="nf">Informer</span><span class="p">().</span><span class="nf">AddIndexers</span><span class="p">(</span><span class="nx">cache</span><span class="p">.</span><span class="nx">Indexers</span><span class="p">{</span>
+		<span class="nx">nodeNameKeyIndex</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">obj</span> <span class="kd">interface</span><span class="p">{})</span> <span class="p">([]</span><span class="kt">string</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+			<span class="nx">pod</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">obj</span><span class="p">.(</span><span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Pod</span><span class="p">)</span>
+			<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+				<span class="k">return</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{},</span> <span class="kc">nil</span>
+			<span class="p">}</span>
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">pod</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">NodeName</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+				<span class="k">return</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{},</span> <span class="kc">nil</span>
+			<span class="p">}</span>
+			<span class="k">return</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="nx">pod</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">NodeName</span><span class="p">},</span> <span class="kc">nil</span>
+		<span class="p">},</span>
+	<span class="p">})</span>
+
+	<span class="nx">podIndexer</span> <span class="o">:=</span> <span class="nx">podInformer</span><span class="p">.</span><span class="nf">Informer</span><span class="p">().</span><span class="nf">GetIndexer</span><span class="p">()</span>
+	<span class="nx">nc</span><span class="p">.</span><span class="nx">getPodsAssignedToNode</span> <span class="p">=</span> <span class="kd">func</span><span class="p">(</span><span class="nx">nodeName</span> <span class="kt">string</span><span class="p">)</span> <span class="p">([]</span><span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Pod</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+		<span class="nx">objs</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">podIndexer</span><span class="p">.</span><span class="nf">ByIndex</span><span class="p">(</span><span class="nx">nodeNameKeyIndex</span><span class="p">,</span> <span class="nx">nodeName</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span>
+		<span class="p">}</span>
+		<span class="nx">pods</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Pod</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">objs</span><span class="p">))</span>
+		<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">obj</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">objs</span> <span class="p">{</span>
+			<span class="nx">pod</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">obj</span><span class="p">.(</span><span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Pod</span><span class="p">)</span>
+			<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+				<span class="k">continue</span>
+			<span class="p">}</span>
+			<span class="nx">pods</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">pods</span><span class="p">,</span> <span class="nx">pod</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="nx">pods</span><span class="p">,</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+	<span class="nx">nc</span><span class="p">.</span><span class="nx">podLister</span> <span class="p">=</span> <span class="nx">podInformer</span><span class="p">.</span><span class="nf">Lister</span><span class="p">()</span>
+
+	<span class="k">if</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">runTaintManager</span> <span class="p">{</span>
+		<span class="nx">podGetter</span> <span class="o">:=</span> <span class="kd">func</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">namespace</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Pod</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">podLister</span><span class="p">.</span><span class="nf">Pods</span><span class="p">(</span><span class="nx">namespace</span><span class="p">).</span><span class="nf">Get</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span> <span class="p">}</span>
+		<span class="nx">nodeLister</span> <span class="o">:=</span> <span class="nx">nodeInformer</span><span class="p">.</span><span class="nf">Lister</span><span class="p">()</span>
+		<span class="nx">nodeGetter</span> <span class="o">:=</span> <span class="kd">func</span><span class="p">(</span><span class="nx">name</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Node</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">nodeLister</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span> <span class="p">}</span>
+		<span class="nx">nc</span><span class="p">.</span><span class="nx">taintManager</span> <span class="p">=</span> <span class="nx">scheduler</span><span class="p">.</span><span class="nf">NewNoExecuteTaintManager</span><span class="p">(</span><span class="nx">kubeClient</span><span class="p">,</span> <span class="nx">podGetter</span><span class="p">,</span> <span class="nx">nodeGetter</span><span class="p">,</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">getPodsAssignedToNode</span><span class="p">)</span>
+		<span class="nx">nodeInformer</span><span class="p">.</span><span class="nf">Informer</span><span class="p">().</span><span class="nf">AddEventHandler</span><span class="p">(</span><span class="nx">cache</span><span class="p">.</span><span class="nx">ResourceEventHandlerFuncs</span><span class="p">{</span>
+			<span class="nx">AddFunc</span><span class="p">:</span> <span class="nx">nodeutil</span><span class="p">.</span><span class="nf">CreateAddNodeHandler</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">node</span> <span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Node</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+				<span class="nx">nc</span><span class="p">.</span><span class="nx">taintManager</span><span class="p">.</span><span class="nf">NodeUpdated</span><span class="p">(</span><span class="kc">nil</span><span class="p">,</span> <span class="nx">node</span><span class="p">)</span>
+				<span class="k">return</span> <span class="kc">nil</span>
+			<span class="p">}),</span>
+			<span class="nx">UpdateFunc</span><span class="p">:</span> <span class="nx">nodeutil</span><span class="p">.</span><span class="nf">CreateUpdateNodeHandler</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">oldNode</span><span class="p">,</span> <span class="nx">newNode</span> <span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Node</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+				<span class="nx">nc</span><span class="p">.</span><span class="nx">taintManager</span><span class="p">.</span><span class="nf">NodeUpdated</span><span class="p">(</span><span class="nx">oldNode</span><span class="p">,</span> <span class="nx">newNode</span><span class="p">)</span>
+				<span class="k">return</span> <span class="kc">nil</span>
+			<span class="p">}),</span>
+			<span class="nx">DeleteFunc</span><span class="p">:</span> <span class="nx">nodeutil</span><span class="p">.</span><span class="nf">CreateDeleteNodeHandler</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">node</span> <span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Node</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+				<span class="nx">nc</span><span class="p">.</span><span class="nx">taintManager</span><span class="p">.</span><span class="nf">NodeUpdated</span><span class="p">(</span><span class="nx">node</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+				<span class="k">return</span> <span class="kc">nil</span>
+			<span class="p">}),</span>
+		<span class="p">})</span>
+	<span class="p">}</span>
+
+	<span class="nx">klog</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Controller will reconcile labels.&#34;</span><span class="p">)</span>
+	<span class="nx">nodeInformer</span><span class="p">.</span><span class="nf">Informer</span><span class="p">().</span><span class="nf">AddEventHandler</span><span class="p">(</span><span class="nx">cache</span><span class="p">.</span><span class="nx">ResourceEventHandlerFuncs</span><span class="p">{</span>
+		<span class="nx">AddFunc</span><span class="p">:</span> <span class="nx">nodeutil</span><span class="p">.</span><span class="nf">CreateAddNodeHandler</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">node</span> <span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Node</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+			<span class="nx">nc</span><span class="p">.</span><span class="nx">nodeUpdateQueue</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+			<span class="nx">nc</span><span class="p">.</span><span class="nx">nodeEvictionMap</span><span class="p">.</span><span class="nf">registerNode</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+			<span class="k">return</span> <span class="kc">nil</span>
+		<span class="p">}),</span>
+		<span class="nx">UpdateFunc</span><span class="p">:</span> <span class="nx">nodeutil</span><span class="p">.</span><span class="nf">CreateUpdateNodeHandler</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">_</span><span class="p">,</span> <span class="nx">newNode</span> <span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Node</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+			<span class="nx">nc</span><span class="p">.</span><span class="nx">nodeUpdateQueue</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">newNode</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+			<span class="k">return</span> <span class="kc">nil</span>
+		<span class="p">}),</span>
+		<span class="nx">DeleteFunc</span><span class="p">:</span> <span class="nx">nodeutil</span><span class="p">.</span><span class="nf">CreateDeleteNodeHandler</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">node</span> <span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Node</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+			<span class="nx">nc</span><span class="p">.</span><span class="nx">nodesToRetry</span><span class="p">.</span><span class="nf">Delete</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+			<span class="nx">nc</span><span class="p">.</span><span class="nx">nodeEvictionMap</span><span class="p">.</span><span class="nf">unregisterNode</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+			<span class="k">return</span> <span class="kc">nil</span>
+		<span class="p">}),</span>
+	<span class="p">})</span>
+
+	<span class="nx">nc</span><span class="p">.</span><span class="nx">leaseLister</span> <span class="p">=</span> <span class="nx">leaseInformer</span><span class="p">.</span><span class="nf">Lister</span><span class="p">()</span>
+	<span class="nx">nc</span><span class="p">.</span><span class="nx">leaseInformerSynced</span> <span class="p">=</span> <span class="nx">leaseInformer</span><span class="p">.</span><span class="nf">Informer</span><span class="p">().</span><span class="nx">HasSynced</span>
+
+	<span class="nx">nc</span><span class="p">.</span><span class="nx">nodeLister</span> <span class="p">=</span> <span class="nx">nodeInformer</span><span class="p">.</span><span class="nf">Lister</span><span class="p">()</span>
+	<span class="nx">nc</span><span class="p">.</span><span class="nx">nodeInformerSynced</span> <span class="p">=</span> <span class="nx">nodeInformer</span><span class="p">.</span><span class="nf">Informer</span><span class="p">().</span><span class="nx">HasSynced</span>
+
+	<span class="nx">nc</span><span class="p">.</span><span class="nx">daemonSetStore</span> <span class="p">=</span> <span class="nx">daemonSetInformer</span><span class="p">.</span><span class="nf">Lister</span><span class="p">()</span>
+	<span class="nx">nc</span><span class="p">.</span><span class="nx">daemonSetInformerSynced</span> <span class="p">=</span> <span class="nx">daemonSetInformer</span><span class="p">.</span><span class="nf">Informer</span><span class="p">().</span><span class="nx">HasSynced</span>
+
+	<span class="k">return</span> <span class="nx">nc</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="运行">运行</h2>
+<p>首先会等待leaseInformer、nodeInformer、podInformerSynced、daemonSetInformerSynced同步完成。</p>
+<p>如果启用taint manager，goroutine一直执行nc.taintManager.Run(stopCh)&ndash;运行taint manager，在下一篇介绍。</p>
+<p>启动8个goroutine每秒执行nc.doNodeProcessingPassWorker&ndash;消费nodeUpdateQueue，更新node的NoSchedule taint和label。</p>
+<p>启动4个goroutine每秒执行doPodProcessingWorker&ndash;消费podUpdateQueue，当pod所在的node为unready，将pod condition设为ready false。在不启用taint manager时候，且node为unready，则对该pod进行删除，如果该node unready持续时间超过pod-evicted-timeout，则node加入到zonePodEvictor。</p>
+<p>启用taint manager启动goroutine每100ms执行doNoExecuteTaintingPass&ndash;消费zoneNoExecuteTainter队列，根据node的ready condition，来更新node的noexecute  taints。</p>
+<p>未启用taint manager启动goroutine每100ms执行doEvictionPass&ndash;消费zonePodEvictor队列，删除node上的所有pod，更新nodeEvictionMap标记node为evicted。</p>
+<p>启动goroutine每<code>--node-monitor-period</code>时间，执行monitorNodeHealth&ndash; 周期性的检查所有node状态，如果kubelet没有更新status.condition ready.lastHeartbeatTime或lease里的renew time 超过nodeMonitorGracePeriod，则更新node status为unknown，并根据zone里node unready的数量，设置每秒不同的数量node进行驱逐pod或添加taint。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/wu0407/assets/img/node-life-controller-Page-4.png" alt=""></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// Run starts an asynchronous loop that monitors the status of cluster nodes.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">nc</span> <span class="o">*</span><span class="nx">Controller</span><span class="p">)</span> <span class="nf">Run</span><span class="p">(</span><span class="nx">stopCh</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kd">struct</span><span class="p">{})</span> <span class="p">{</span>
+	<span class="k">defer</span> <span class="nx">utilruntime</span><span class="p">.</span><span class="nf">HandleCrash</span><span class="p">()</span>
+
+	<span class="nx">klog</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Starting node controller&#34;</span><span class="p">)</span>
+	<span class="k">defer</span> <span class="nx">klog</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Shutting down node controller&#34;</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="p">!</span><span class="nx">cache</span><span class="p">.</span><span class="nf">WaitForNamedCacheSync</span><span class="p">(</span><span class="s">&#34;taint&#34;</span><span class="p">,</span> <span class="nx">stopCh</span><span class="p">,</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">leaseInformerSynced</span><span class="p">,</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">nodeInformerSynced</span><span class="p">,</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">podInformerSynced</span><span class="p">,</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">daemonSetInformerSynced</span><span class="p">)</span> <span class="p">{</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="c1">//pod是否能够toleration上的tains，不能就进行驱逐pod
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">runTaintManager</span> <span class="p">{</span>
+		<span class="k">go</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">taintManager</span><span class="p">.</span><span class="nf">Run</span><span class="p">(</span><span class="nx">stopCh</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Close node update queue to cleanup go routine.
+</span><span class="c1"></span>	<span class="k">defer</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">nodeUpdateQueue</span><span class="p">.</span><span class="nf">ShutDown</span><span class="p">()</span>
+	<span class="k">defer</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">podUpdateQueue</span><span class="p">.</span><span class="nf">ShutDown</span><span class="p">()</span>
+
+	<span class="c1">// Start workers to reconcile labels and/or update NoSchedule taint for nodes.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">scheduler</span><span class="p">.</span><span class="nx">UpdateWorkerSize</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="c1">// Thanks to &#34;workqueue&#34;, each worker just need to get item from queue, because
+</span><span class="c1"></span>		<span class="c1">// the item is flagged when got from queue: if new event come, the new item will
+</span><span class="c1"></span>		<span class="c1">// be re-queued until &#34;Done&#34;, so no more than one worker handle the same item and
+</span><span class="c1"></span>		<span class="c1">// no event missed.
+</span><span class="c1"></span>		<span class="k">go</span> <span class="nx">wait</span><span class="p">.</span><span class="nf">Until</span><span class="p">(</span><span class="nx">nc</span><span class="p">.</span><span class="nx">doNodeProcessingPassWorker</span><span class="p">,</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">,</span> <span class="nx">stopCh</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">podUpdateWorkerSize</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="k">go</span> <span class="nx">wait</span><span class="p">.</span><span class="nf">Until</span><span class="p">(</span><span class="nx">nc</span><span class="p">.</span><span class="nx">doPodProcessingWorker</span><span class="p">,</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">,</span> <span class="nx">stopCh</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="k">if</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">runTaintManager</span> <span class="p">{</span>
+		<span class="c1">// Handling taint based evictions. Because we don&#39;t want a dedicated logic in TaintManager for NC-originated
+</span><span class="c1"></span>		<span class="c1">// taints and we normally don&#39;t rate limit evictions caused by taints, we need to rate limit adding taints.
+</span><span class="c1"></span>		<span class="k">go</span> <span class="nx">wait</span><span class="p">.</span><span class="nf">Until</span><span class="p">(</span><span class="nx">nc</span><span class="p">.</span><span class="nx">doNoExecuteTaintingPass</span><span class="p">,</span> <span class="nx">scheduler</span><span class="p">.</span><span class="nx">NodeEvictionPeriod</span><span class="p">,</span> <span class="nx">stopCh</span><span class="p">)</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="c1">// Managing eviction of nodes:
+</span><span class="c1"></span>		<span class="c1">// When we delete pods off a node, if the node was not empty at the time we then
+</span><span class="c1"></span>		<span class="c1">// queue an eviction watcher. If we hit an error, retry deletion.
+</span><span class="c1"></span>		<span class="k">go</span> <span class="nx">wait</span><span class="p">.</span><span class="nf">Until</span><span class="p">(</span><span class="nx">nc</span><span class="p">.</span><span class="nx">doEvictionPass</span><span class="p">,</span> <span class="nx">scheduler</span><span class="p">.</span><span class="nx">NodeEvictionPeriod</span><span class="p">,</span> <span class="nx">stopCh</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Incorporate the results of node health signal pushed from kubelet to master.
+</span><span class="c1"></span>	<span class="k">go</span> <span class="nx">wait</span><span class="p">.</span><span class="nf">Until</span><span class="p">(</span><span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">nc</span><span class="p">.</span><span class="nf">monitorNodeHealth</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">klog</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;Error monitoring node health: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="p">},</span> <span class="nx">nc</span><span class="p">.</span><span class="nx">nodeMonitorPeriod</span><span class="p">,</span> <span class="nx">stopCh</span><span class="p">)</span>
+
+	<span class="o">&lt;-</span><span class="nx">stopCh</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="donodeprocessingpassworker">doNodeProcessingPassWorker</h3>
+<p>node更新、添加事件，都会添加到nodeUpdateQueue中。</p>
+<p>doNodeProcessingPassWorker从nodeUpdateQueue获取一个node，根据node status里的condition，设置不同的noschedule taint和设置node label。</p>
+<p>对该node执行doNoScheduleTaintingPass&ndash;根据node status里的condition设置taint</p>
+<ul>
+<li>node.status.Conditions 有type为ready的condition。如果这个condition.status为fasle，设置<code>key node.kubernetes.io/not-ready，Effect为noschedule  </code> 的taint；这个condition.status为unknown，设置<code>key node.kubernetes.io/unreachable，Effect为noschedule  </code></li>
+<li>node.status.Conditions 有type为MemoryPressure的condition。如果这个condition.status为true，设置<code>key node.kubernetes.io/memory-pressure，Effect为noschedule</code>的taint</li>
+<li>node.status.Conditions 有type为DiskPressure的condition。如果这个condition.status为true，设置<code>key node.kubernetes.io/disk-pressure，Effect为noschedule</code>的taint</li>
+<li>node.status.Conditions 有type为NetworkUnavailable的condition。如果这个condition.status为true，设置<code>key node.kubernetes.io/network-unavailable，Effect为noschedule</code>的taint</li>
+<li>node.status.Conditions 有type为PIDPressure的condition。如果这个condition.status为true，设置<code>key node.kubernetes.io/pid-pressure，Effect为noschedule</code>的taint</li>
+<li>node.Spec.Unschedulable有值，则设置<code>key node.kubernetes.io/unschedulable  Effect为noschedule</code>  的taint</li>
+</ul>
+<p>执行reconcileNodeLabels&ndash;当os和arch label存在，确保一致</p>
+<ul>
+<li>缓存中获取node，确认node是否存在，node不存在，直接返回</li>
+<li>检查node label是否为空，为空直接返回</li>
+<li>如果存在label &ldquo;beta.kubernetes.io/os&rdquo;，则设置label &ldquo;kubernetes.io/os&quot;值是一样的，否则忽略</li>
+<li>如果存在label &ldquo;beta.kubernetes.io/arch&rdquo;，则设置label &ldquo;kubernetes.io/arch&quot;值是一样，否则忽略</li>
+</ul>
+<p>处理完执行Done，将node从workqueue中移除。</p>
+<p><strong>总结</strong></p>
+<p>当node  ready condition.status为fasle，会设置<code>key node.kubernetes.io/not-ready，Effect为noschedule  </code> 的taint。如果启用了taint manager，还会设置<code>key node.kubernetes.io/not-ready，Effect为noExecute  </code> 的taint(在monitorNodeHealth里processTaintBaseEviction里执行的)</p>
+<p>当node ready condition.status为unknown，会设置<code>key node.kubernetes.io/unreachable，Effect为noschedule  </code> 的taint。如果启用了taint manager，还会设置<code>key node.kubernetes.io/unreachable，Effect为noExecute  </code> 的taint(在monitorNodeHealth里processTaintBaseEviction里执行的)</p>
+<p>label &ldquo;beta.kubernetes.io/os&rdquo;、&ldquo;kubernetes.io/os&quot;和beta.kubernetes.io/arch&rdquo;、&ldquo;kubernetes.io/arch&quot;在kubelet node注册的时候就会有，这里只是确保<code>beta.kubernetes.io/*</code>存在，<code>kubernetes.io/*</code>也要存在。</p>
+<h3 id="dopodprocessingworker">doPodProcessingWorker</h3>
+<p>当pod新生成且pod绑定了node（spec.NodeName存在）、pod更新且绑定的node发生变化都会添加到podUpdateQueue。</p>
+<p>doPodProcessingWorker从podUpdateQueue读取一个pod，执行processPod&ndash;如果pod绑定node为unready，则将这个pod的ready condition设置为false，并更新transitionTimestamp。未启用taint manager，pod绑定node为unready，先驱逐这个pod，然后将node添加到zonePodEvictor</p>
+<ol>
+<li>
+<p>从缓存中获取pod，得到pod绑定的node名字。</p>
+</li>
+<li>
+<p>判断node是否在nodeHealthMap里，如果不在，直接返回。</p>
+</li>
+<li>
+<p>获取nodeHealthMap里最后发现node的ready condition，如果为空，直接返回。</p>
+</li>
+<li>
+<p>如果未启用taint manager，执行processNoTaintBaseEviction</p>
+<ul>
+<li>node最后发现ReadyCondition为false，如果nodeHealthMap里的readyTransitionTimestamp加上podEvictionTimeout的时间是过去的时间&ndash;ReadyCondition为false状态已经持续了至少podEvictionTimeout，执行evictPods。</li>
+<li>node最后发现ReadyCondition为unknown，如果nodeHealthMap里的readyTransitionTimestamp加上podEvictionTimeout的时间是过去的时间&ndash;ReadyCondition为false状态已经持续了至少podEvictionTimeout，执行evictPods。</li>
+<li>node最后发现ReadyCondition为true，则执行cancelPodEviction&ndash;在nodeEvictionMap设置status为unmarked，然后node从zonePodEvictor队列中移除。</li>
+<li>evictPods&ndash;先从nodeEvictionMap获取node驱逐的状态，如果是evicted说明node已经发生驱逐，则把node上的这个pod删除。否则设置状态为toBeEvicted，然后node加入zonePodEvictor队列等待执行驱逐pod。</li>
+</ul>
+</li>
+<li>
+<p>node最后发现ReadyCondition不为true，执行MarkPodsNotReady&ndash;如果pod的ready condition不为false， 将pod的ready condition设置为false，并更新LastTransitionTimestamp；否则不更新pod</p>
+</li>
+</ol>
+<p>为什么node不在nodeHealthMap里或nodeHealthMap里最后发现node的ready condition为空，就直接返回？</p>
+<p>node不在nodeHealthMap里，说明node被删除或者controller manager刚运行 node信息还未收集&ndash;monitorNodeHealth刚运行。nodeHealthMap里最后发现node的ready condition为空，说明node是刚添加。因为我们要获取最后保存的node状态来决定采取的动作，所以这里直接返回。</p>
+<p>为什么只对未启用taint manager采取动作，启用的taint manager未采取动作？</p>
+<p>在NewNodeLifecycleController里定义了， 在启用taint manager情况下，pod发生变化都会将pod添加进taintManager里的podUpdateQueue，由taint manager进行处理，所以不在这里处理。</p>
+<h3 id="执行驱逐pod">执行驱逐pod</h3>
+<p>启用taint manager 执行doNoExecuteTaintingPass&ndash;添加NoExecute的taint。这里不执行驱逐，驱逐单独在taint manager里处理。</p>
+<p>doNoExecuteTaintingPass是一个令牌桶限速队列</p>
+<ul>
+<li>遍历zoneNoExecuteTainter，获得一个zone的node队列，从队列中获取一个node，执行下面步骤</li>
+<li>从缓存中获取node</li>
+<li>如果node ready condition为false，移除“node.kubernetes.io/unreachable”的taint，添加“node.kubernetes.io/not-ready” 的taint，Effect为NoExecute。</li>
+<li>如果node ready condition为unknown，移除“node.kubernetes.io/not-ready” 的taint，添加“node.kubernetes.io/unreachable” 的taint，Effect为NoExecute。</li>
+</ul>
+<p>未启用taint manager 执行doEvictionPass&ndash;对node上的所有pod进行驱逐。</p>
+<p>doEvictionPass是一个令牌桶限速队列，+加入这个队列的node都是 unready状态持续时间大于podEvictionTimeout。</p>
+<ul>
+<li>遍历zonePodEvictor，获取一个zone里的node队列，从队列中获取一个node，执行下面步骤</li>
+<li>获取node的uid，从缓存中获取node上的所有pod</li>
+<li>执行DeletePods&ndash;删除daemonset之外的所有pod，保留daemonset的pod
+<ol>
+<li>遍历所由的pod，检查pod绑定的node是否跟提供的一样，不一样则跳过这个pod</li>
+<li>执行SetPodTerminationReason&ndash;设置pod Status.Reason为<code>NodeLost</code>，Status.Message为<code>&quot;Node %v which was running pod %v is unresponsive&quot;</code>，并更新pod。</li>
+<li>如果pod 设置了DeletionGracePeriodSeconds，说明pod已经被删除，则跳过这个pod</li>
+<li>判断pod是否为daemonset的pod，如果是则跳过这个pod</li>
+<li>删除这个pod</li>
+</ol>
+</li>
+<li>在nodeEvictionMap设置node的状态为evicted</li>
+</ul>
+<h3 id="主动扫描node健康状态monitornodehealth">主动扫描node健康状态monitorNodeHealth</h3>
+<p>每隔nodeMonitorPeriod周期，执行一次monitorNodeHealth，维护node状态和zone的状态，更新未响应的node&ndash;设置node status为unknown和根据集群不同状态设置zone的速率。</p>
+<h4 id="node分类并初始化">node分类并初始化</h4>
+<p>从缓存中获取所有node列表，借助两个字段knownNodeSet（用来存放已经发现的node集合）和zoneStates（用来存储已经发现zone的状态&ndash;状态有Initial、Normal、FullDisruption、PartialDisruption）来进行对node进行分类，分为新加的&ndash;add、删除的deleted、新的zone node&ndash;newZoneRepresentatives。</p>
+<p>对新发现的zone进行初始化&ndash;启用taint manager，设置执行node设置taint 队列zoneNoExecuteTainter（存放node为unready，需要添加taint）的速率为evictionLimiterQPS。未启用taint manager，设置安排node执行驱逐队列zonePodEvictor（存放zone里的需要执行pod evictor的node列表）的速率evictionLimiterQPS。同时在zoneStates里设置zone状态为stateInitial。</p>
+<p>对新发现的node，添加到knownNodeSet，同时在zoneStates里设置zone状态为stateInitial，如果node的所属的zone未初始化，则进行初始化。启用taint manager，标记node为健康的&ndash;移除node上unreachable和notready taint（如果存在），从zoneNoExecuteTainter（存放node为unready，需要添加taint）队列中移除（如果存在）。未启用taint manager，初始化nodeEvictionMap（存放node驱逐执行pod的进度）&ndash;设置node的状态为unmarked，从zonePodEvictor（存放zone的需要pod evictor的node列表）队列中移除。</p>
+<p>对删除的node，发送一个RemovingNode事件并从knownNodeSet里移除。</p>
+<h4 id="处理node-status">处理node status</h4>
+<p><strong>超时时间</strong></p>
+<p>如果当前node的ready condition为空，说明node刚注册，所以它的超时时间为nodeStartupGracePeriod，否则它的超时时间为nodeMonitorGracePeriod。</p>
+<p><strong>心跳时间</strong></p>
+<p>最后的心跳时间（probeTimestamp和readyTransitionTimestamp），由下面规则从上往下执行。</p>
+<p>如果node刚注册，则nodeHealthMap保存的probeTimestamp和readyTransitionTimestamp都为node的创建时间。</p>
+<p>如果nodeHealthMap里没有该node数据，则probeTimestamp和readyTransitionTimestamp都为现在。</p>
+<p>如果nodeHealthMap里的 ready condition没有，而现在有ready condition，则probeTimestamp和readyTransitionTimestamp都为现在，status为现在的status。</p>
+<p>如果nodeHealthMap里的有ready condition，而现在的ready condition没有，说明发生了未知的异常情况（一般不会发生，只是预防性的代码），则probeTimestamp和readyTransitionTimestamp都为现在，status为现在的status。</p>
+<p>如果nodeHealthMap里有ready condition，而现在的ready condition也有，且保存的LastHeartbeatTime与现在不一样。probeTimestamp为现在、status为现在的status。 如果保存的LastTransitionTime与现在的不一样，说明node状态发生了变化，则设置nodeHealthMap的readyTransitionTimestamp为现在。</p>
+<p>如果现在的lease存在，且lease的RenewTime在nodeHealthMap保存的RenewTime之后，或者nodeHealthMap里不存在。则probeTimestamp为现在，保存现在lease到nodeHealthMap里。</p>
+<p><strong>尝试更新node状态</strong></p>
+<p>如果probeTimestamp加上超时时间，在现在之前&ndash;即status状态更新已经超时，则会更新update node。</p>
+<p>更新ready、memorypressure、diskpressure、pidpressure的condition为：</p>
+<p>相应condition不存在</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">v1</span><span class="p">.</span><span class="nx">NodeCondition</span><span class="p">{</span>
+		<span class="nx">Type</span><span class="p">:</span>               <span class="nx">nodeConditionType</span><span class="p">,</span><span class="c1">//上面的四种类型
+</span><span class="c1"></span>		<span class="nx">Status</span><span class="p">:</span>             <span class="nx">v1</span><span class="p">.</span><span class="nx">ConditionUnknown</span><span class="p">,</span><span class="c1">// unknown
+</span><span class="c1"></span>		<span class="nx">Reason</span><span class="p">:</span>             <span class="s">&#34;NodeStatusNeverUpdated&#34;</span><span class="p">,</span>
+		<span class="nx">Message</span><span class="p">:</span>            <span class="s">&#34;Kubelet never posted node status.&#34;</span><span class="p">,</span>
+		<span class="nx">LastHeartbeatTime</span><span class="p">:</span>  <span class="nx">node</span><span class="p">.</span><span class="nx">CreationTimestamp</span><span class="p">,</span><span class="c1">//node创建时间
+</span><span class="c1"></span>		<span class="nx">LastTransitionTime</span><span class="p">:</span> <span class="nx">nowTimestamp</span><span class="p">,</span> <span class="c1">//现在时间
+</span><span class="c1"></span><span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>相应的condition存在</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">currentCondition</span><span class="p">.</span><span class="nx">Status</span> <span class="p">=</span> <span class="nx">v1</span><span class="p">.</span><span class="nx">ConditionUnknown</span>
+<span class="nx">currentCondition</span><span class="p">.</span><span class="nx">Reason</span> <span class="p">=</span> <span class="s">&#34;NodeStatusUnknown&#34;</span>
+<span class="nx">currentCondition</span><span class="p">.</span><span class="nx">Message</span> <span class="p">=</span> <span class="s">&#34;Kubelet stopped posting node status.&#34;</span>
+<span class="nx">currentCondition</span><span class="p">.</span><span class="nx">LastTransitionTime</span> <span class="p">=</span> <span class="nx">nowTimestamp</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>如果现在node与之前的node不一样的&ndash;发生了更新，则对node执行update。</p>
+<p>update成功，同时更新nodeHealthMap上的状态&ndash;readyTransitionTimestamp改为现在，status改为现在的node.status。</p>
+<p><strong>对unready node进行处理&ndash;驱逐pod</strong></p>
+<p>node当前的ReadyCondition&ndash;执行尝试更新node状态之后的node的ReadyCondition</p>
+<p>node最后发现ReadyCondition&ndash;执行尝试更新node状态之前node的ReadyCondition</p>
+<p>如果当前的ReadyCondition不为空，执行下面操作</p>
+<ol>
+<li>从缓存中获取node上pod列表</li>
+<li>如果启用taint manager，执行processTaintBaseEviction&ndash;根据node最后发现ReadyCondition 对node的taint进行操作
+<ol>
+<li>node最后发现ReadyCondition为false，如果已经有“node.kubernetes.io/unreachable”的taint，将该taint删除，添加“node.kubernetes.io/not-ready” 的taint。否则将node添加到zoneNoExecuteTainter队列中，等待添加taint。</li>
+<li>node最后发现ReadyCondition为unknown，如果已经有“node.kubernetes.io/not-ready” 的taint，将该taint删除，添加“node.kubernetes.io/unreachable”的taint。否则将node添加到zoneNoExecuteTainter队列中，等待添加taint。</li>
+<li>node最后发现ReadyCondition为true，移除“node.kubernetes.io/not-ready” 和“node.kubernetes.io/unreachable”的taint，如果存在的话，同时从zoneNoExecuteTainter队列中移除。</li>
+</ol>
+</li>
+<li>未启用taint manager，则执行processNoTaintBaseEviction
+<ul>
+<li>node最后发现ReadyCondition为false，nodeHealthMap里的readyTransitionTimestamp加上podEvictionTimeout的时间是过去的时间&ndash;ReadyCondition为false状态已经持续了至少podEvictionTimeout，执行evictPods。</li>
+<li>node最后发现ReadyCondition为unknown，nodeHealthMap里的readyTransitionTimestamp加上podEvictionTimeout的时间是过去的时间&ndash;ReadyCondition为false状态已经持续了至少podEvictionTimeout，执行evictPods。</li>
+<li>node最后发现ReadyCondition为true，则执行cancelPodEviction&ndash;在nodeEvictionMap设置status为unmarked，然后node从zonePodEvictor队列中移除。</li>
+<li>evictPods&ndash;先从nodeEvictionMap获取node驱逐的状态，如果是evicted说明node已经发生驱逐，则把node上所有的pod删除。否则设置状态为toBeEvicted，然后node加入zonePodEvictor队列等待执行驱逐pod。</li>
+</ul>
+</li>
+</ol>
+<p><strong>这里有个疑问</strong>：</p>
+<p>为什么要用observedReadyCondition 而不用currentReadyCondition，observedReadyCondition和currentReadyCondition不一定一样？</p>
+<p>比如node挂了currentReadyCondition变为unknown，而observedReadyCondition为ready</p>
+<p>这样明显有问题，这一周期不会做驱逐或taint，下一周期observedReadyCondition和currentReadyCondition都为unknown 一定会驱逐pod或添加taint。</p>
+<p>可能考虑nodeMonitorPeriod都很短，不立马执行驱逐或taint没有什么大问题。</p>
+<h4 id="集群健康状态处理">集群健康状态处理</h4>
+<p>每个zone有四种状态，stateInitial（刚加入的zone）、stateFullDisruption（全挂）、statePartialDisruption（挂的node比例超出了unhealthyZoneThreshold）、stateNormal（剩下的所有情况）</p>
+<p>allAreFullyDisrupted代表现在所有zone状态stateFullDisruption全挂</p>
+<p>allWasFullyDisrupted为true代表过去所有zone状态stateFullDisruption全挂</p>
+<p>集群状态有四种：</p>
+<ul>
+<li>allAreFullyDisrupted为true allWasFullyDisrupted为true</li>
+<li>allAreFullyDisrupted为true allWasFullyDisrupted为false</li>
+<li>allAreFullyDisrupted为false allWasFullyDisrupted为true</li>
+<li>allAreFullyDisrupted为false allWasFullyDisrupted为false</li>
+</ul>
+<p><strong>计算现在集群的状态</strong></p>
+<p>遍历现在所有的zone，每个zone遍历所有node的ready condition，计算出zone的状态。</p>
+<p>根据zone的状态设置allAreFullyDisrupted的值</p>
+<p>如果zone不在zoneStates，添加进zoneStates并设置状态为stateInitial</p>
+<p><strong>计算过去集群的状态</strong></p>
+<p>从zoneStates读取保存的zone列表，如果不在现在的zone列表里，则从zoneStates移除</p>
+<p>根据zoneStates里保存的zone状态设置allWasFullyDisrupted值</p>
+<p><strong>设置zone 每秒安排多少个node来执行taint或驱逐</strong></p>
+<p>当allAreFullyDisrupted为false allWasFullyDisrupted为true&ndash;之前zone未全挂，现在所有zone全挂。</p>
+<ol>
+<li>
+<p>遍历所有node，设置node为正常状态。</p>
+<ul>
+<li>启用taint manager，执行markNodeAsReachable&ndash;移除“node.kubernetes.io/not-ready”和“node.kubernetes.io/unreachable”的taint，如果存的话，同时从zoneNoExecuteTainter队列中移除</li>
+<li>未启用taint manager，执行cancelPodEviction&ndash;在nodeEvictionMap设置status为unmarked，然后node从zonePodEvictor队列中移除</li>
+</ul>
+</li>
+<li>
+<p>从zoneStates读取保存的zone列表，设置zone 每秒安排多少个node来执行taint或驱逐</p>
+<ul>
+<li>启用taint manager，设置zoneNoExecuteTainter的速率为0</li>
+<li>未启用taint manager， 设置zonePodEvictor的速率为0</li>
+</ul>
+</li>
+<li>
+<p>设置所有zoneStates里的zone为stateFullDisruption</p>
+</li>
+</ol>
+<p>当 allAreFullyDisrupted为true allWasFullyDisrupted为false&ndash;过去所有zone全挂，现在所有zone未全挂</p>
+<ol>
+<li>遍历所有node更新nodeHealthMap里的probeTImestamp、readyTransitiontimestamp为现在的时间戳</li>
+<li>遍历zoneStates，重新评估zone的每秒安排多少个node来执行taint或驱逐
+<ul>
+<li>当zone的状态为stateNormal，如果启用taint manager，则zoneNoExecuteTainter速率设置为evictionLimiterQPS，否则，设置zonePodEvictor的速率为evictionLimiterQPS的速率</li>
+<li>当zone状态为statePartialDisruption，如果启用taint manager，根据zone里的node数量，当node数量大于largeClusterThreshold，设置zoneNoExecuteTainter速率为SecondEvictionLimiterQPS；小于等于largeClusterThreshold，设置zoneNoExecuteTainter速率为0。未启用taint manager，根据zone里的node数量，当node数量大于largeClusterThreshold，设置zonePodEvictor速率为SecondEvictionLimiterQPS；小于等于largeClusterThreshold，设置zonePodEvictorTainter速率为0。</li>
+<li>当zone状态为stateFullDisruption，如果启用taint manager，则zoneNoExecuteTainter速率设置为evictionLimiterQPS，否则，设置zonePodEvictor的速率为evictionLimiterQPS的速率</li>
+<li>这里不处理stateInitial状态的zone，因为下一周期，zone会变成非stateInitial，下面就是处理这个情况的</li>
+</ul>
+</li>
+</ol>
+<p>除了上面两种情况，还有一个情况要进行处理，allAreFullyDisrupted为false allWasFullyDisrupted为false，就是没有发生集群所有zone全挂。这个时候zone有可能发生状态转换，所以需要重新评估zone的速率</p>
+<ol>
+<li>遍历zoneStates，当保存的状态和新的状态不一致的时候&ndash;zone状态发生了变化，重新评估zone的速率
+<ul>
+<li>当zone的状态为stateNormal，如果启用taint manager，则zoneNoExecuteTainter速率设置为evictionLimiterQPS，否则，设置zonePodEvictor的速率为evictionLimiterQPS的速率</li>
+<li>当zone状态为statePartialDisruption，如果启用taint manager，根据zone里的node数量，当node数量大于largeClusterThreshold，设置zoneNoExecuteTainter速率为SecondEvictionLimiterQPS；小于等于largeClusterThreshold，设置zoneNoExecuteTainter速率为0。未启用taint manager，根据zone里的node数量，当node数量大于largeClusterThreshold，设置zonePodEvictor速率为SecondEvictionLimiterQPS；小于等于largeClusterThreshold，设置zonePodEvictorTainter速率为0。</li>
+<li>当zone状态为stateFullDisruption，如果启用taint manager，则zoneNoExecuteTainter速率设置为evictionLimiterQPS，否则，设置zonePodEvictor的速率为evictionLimiterQPS的速率</li>
+</ul>
+</li>
+<li>zoneStates里的状态更新为新的状态</li>
+</ol>
+<p>而allAreFullyDisrupted为true allWasFullyDisrupted为true，集群一直都是挂着，不需要处理，zone状态没有发生改变。</p>
+<h4 id="总结">总结</h4>
+<p>只有在这几种情况下，会调整队列速率：</p>
+<ol>
+<li>集群里所有zone全挂，zone的速率设置为0</li>
+<li>集群未全挂，zone的unready node比例超过了unhealthyZoneThreshold，且node数量大于largeClusterThreshold，zone的速率设置为SecondEvictionLimiterQPS</li>
+</ol>
+<p>其中集群里没有发生的所有zone全挂，某个zone发生全挂，zone的速率还是evictionLimiterQPS</p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">xiaoqing</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">
+        2020-12-26
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/kubernetes/">kubernetes</a>
+          <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">源码解析</a>
+          </div>
+      <nav class="post-nav">
+        
+        
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:your@email.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/wu0407" class="iconfont icon-github" title="github"></a>
+  <a href="https://midbai.com/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020<span class="heart"><i class="iconfont icon-heart"></i></span><span>xiaoqing</span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.c12618f9a600c40bd024996677e951e64d3487006775aeb22e200c990006c5c7.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>

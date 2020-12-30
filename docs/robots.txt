@@ -1,2 +1,2 @@
 User-agent: *
-Sitemap: http://wu0407.github.io/sitemap.xml
+Sitemap: https://midbai.com/sitemap.xml

@@ -1,21 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>xiaoqing</title>
-    <link>https://midbai.com/</link>
-    <description>Recent content on xiaoqing</description>
+    <title>Posts on xiaoqing</title>
+    <link>https://midbai.com/post/</link>
+    <description>Recent content in Posts on xiaoqing</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Sat, 26 Dec 2020 20:50:47 +0800</lastBuildDate><atom:link href="https://midbai.com/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>About</title>
-      <link>https://midbai.com/about/</link>
-      <pubDate>Tue, 29 Dec 2020 22:26:58 +0800</pubDate>
-      
-      <guid>https://midbai.com/about/</guid>
-      <description>想这里写一些技术、想法等 想写就写，不必在意</description>
-    </item>
-    
+    <lastBuildDate>Sat, 26 Dec 2020 20:50:47 +0800</lastBuildDate><atom:link href="https://midbai.com/post/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Node Lifecycle Controller Manager源码解析</title>
       <link>https://midbai.com/post/node-lifecycle-controller-manager/</link>
