@@ -53,9 +53,14 @@ summaryLength = "120"
   url = "/categories/"
 [[menu.main]]
   name = "Kubernetes"
-  weight = 40
+  weight = 50
   identifier = "kubernetes"
-  url = "/kubernetes/"
+  url = "/categories/kubernetes/"
+[[menu.main]]
+  name = "About"
+  weight = 60
+  identifier = "about"
+  url = "/about/"
 
 [params]
   version = "4.x"           # Used to give a friendly message when you have an incompatible update
@@ -120,7 +125,7 @@ summaryLength = "120"
   uglyURLs = false          # please keep same with uglyurls setting
 
   #support select sections in home page https://gohugo.io/functions/where/#mainsections
-  mainSections = ["post", "kubernetes"]
+  mainSections = ["post"]
 
   [params.publicCDN]        # load these files from public cdn                          # 启用公共CDN，需自行定义
     enable = true
