@@ -45,7 +45,7 @@
 <meta property="og:description" content="Share the technology, broadcaster myself." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://midbai.com/" />
-<meta property="og:updated_time" content="2020-12-26T20:50:47+08:00" />
+<meta property="og:updated_time" content="2021-01-03T22:29:10+08:00" />
 <meta itemprop="name" content="xiaoqing">
 <meta itemprop="description" content="Share the technology, broadcaster myself.">
 <meta name="twitter:card" content="summary"/>
@@ -122,6 +122,30 @@
     
     <article class="post">
   <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/post/taint-manager/">Taint Manager源码解析</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2021-01-03 </span>
+      <div class="post-category">
+          <a href="/categories/kubernetes/"> kubernetes </a>
+          </div>
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>taint manager是由pod和node事件触发执行，根据node或pod绑定的node是否有的noExcute taint，如果有则对node上所有的pod或这个pod执行删除。</p>
+<p>在<a href="/post/node-lifecycle-controller-manager/">上篇的node lifecycle controller</a>中,如果启用了taint manager就会调用NewNoExecuteTaintManager对taint manager进行初始化。</p>
+<p>在node lifecycle controller中定义了pod事件和node事件的handler，在启用taint manager时候还会将pod事件和node事件放入到taint manager里的nodeUpdateQueue和podUpdateQueue。</p>
+<p>同时在node lifecycle controller中会启动一个goroutine 执行taintManager.Run(stopCh)。</p>
+    </div>
+    <div class="read-more">
+      <a href="/post/taint-manager/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
     <h1 class="post-title"><a class="post-link" href="/post/node-lifecycle-controller-manager/">Node Lifecycle Controller Manager源码解析</a></h1>
     <div class="post-meta">
       <span class="post-time"> 2020-12-26 </span>
@@ -175,7 +199,8 @@
 
   <span class="copyright-year">
     &copy; 
-    2020<span class="heart"><i class="iconfont icon-heart"></i></span><span>xiaoqing</span>
+    2020 - 
+    2021<span class="heart"><i class="iconfont icon-heart"></i></span><span>xiaoqing</span>
   </span>
 </div>
 

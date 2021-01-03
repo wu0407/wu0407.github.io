@@ -6,7 +6,19 @@
     <description>Recent content in kubernetes on xiaoqing</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Sat, 26 Dec 2020 20:50:47 +0800</lastBuildDate><atom:link href="https://midbai.com/tags/kubernetes/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 03 Jan 2021 22:29:10 +0800</lastBuildDate><atom:link href="https://midbai.com/tags/kubernetes/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Taint Manager源码解析</title>
+      <link>https://midbai.com/post/taint-manager/</link>
+      <pubDate>Sun, 03 Jan 2021 22:29:10 +0800</pubDate>
+      
+      <guid>https://midbai.com/post/taint-manager/</guid>
+      <description>&lt;p&gt;taint manager是由pod和node事件触发执行，根据node或pod绑定的node是否有的noExcute taint，如果有则对node上所有的pod或这个pod执行删除。&lt;/p&gt;
+&lt;p&gt;在&lt;a href=&#34;https://midbai.com/post/node-lifecycle-controller-manager/&#34;&gt;上篇的node lifecycle controller&lt;/a&gt;中,如果启用了taint manager就会调用NewNoExecuteTaintManager对taint manager进行初始化。&lt;/p&gt;
+&lt;p&gt;在node lifecycle controller中定义了pod事件和node事件的handler，在启用taint manager时候还会将pod事件和node事件放入到taint manager里的nodeUpdateQueue和podUpdateQueue。&lt;/p&gt;
+&lt;p&gt;同时在node lifecycle controller中会启动一个goroutine 执行taintManager.Run(stopCh)。&lt;/p&gt;</description>
+    </item>
+    
     <item>
       <title>Node Lifecycle Controller Manager源码解析</title>
       <link>https://midbai.com/post/node-lifecycle-controller-manager/</link>

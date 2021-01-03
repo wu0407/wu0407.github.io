@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Taint Manager源码解析 - xiaoqing</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="xiaoqing" /><meta name="description" content="kubernetes taint Manager源码解析" /><meta name="keywords" content="kubernetes, controller manager, node, Taint Manager, 源码解析" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.79.1 with theme even" />
+
+
+<link rel="canonical" href="https://midbai.com/post/taint-manager/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.c7bc1becf36bcf6a9ebd25d2947e43a2eb745ddb0c9a32b43126fd7fa460c351.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="Taint Manager源码解析" />
+<meta property="og:description" content="kubernetes taint Manager源码解析" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://midbai.com/post/taint-manager/" />
+<meta property="article:published_time" content="2021-01-03T22:29:10+08:00" />
+<meta property="article:modified_time" content="2021-01-03T22:29:10+08:00" />
+<meta itemprop="name" content="Taint Manager源码解析">
+<meta itemprop="description" content="kubernetes taint Manager源码解析">
+<meta itemprop="datePublished" content="2021-01-03T22:29:10+08:00" />
+<meta itemprop="dateModified" content="2021-01-03T22:29:10+08:00" />
+<meta itemprop="wordCount" content="7363">
+
+
+
+<meta itemprop="keywords" content="kubernetes,源码解析," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Taint Manager源码解析"/>
+<meta name="twitter:description" content="kubernetes taint Manager源码解析"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">xiaoqing blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">Categories</li>
+      </a><a href="/categories/kubernetes/">
+        <li class="mobile-menu-item">Kubernetes</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">xiaoqing blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">Categories</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/kubernetes/">Kubernetes</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">Taint Manager源码解析</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2021-01-03 </span>
+        <div class="post-category">
+            <a href="/categories/kubernetes/"> kubernetes </a>
+            </div>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Contents</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#初始化">初始化</a></li>
+        <li><a href="#数据结构">数据结构</a></li>
+        <li><a href="#运行">运行</a>
+          <ul>
+            <li><a href="#worker">worker</a></li>
+            <li><a href="#taintevictionqueue--定时执行队列">taintEvictionQueue&ndash;定时执行队列</a></li>
+            <li><a href="#handlenodeupdate--处理node事件">handleNodeUpdate&ndash;处理node事件</a></li>
+            <li><a href="#handlepodupdate">handlePodUpdate</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <p>taint manager是由pod和node事件触发执行，根据node或pod绑定的node是否有的noExcute taint，如果有则对node上所有的pod或这个pod执行删除。</p>
+<p>在<a href="/post/node-lifecycle-controller-manager/">上篇的node lifecycle controller</a>中,如果启用了taint manager就会调用NewNoExecuteTaintManager对taint manager进行初始化。</p>
+<p>在node lifecycle controller中定义了pod事件和node事件的handler，在启用taint manager时候还会将pod事件和node事件放入到taint manager里的nodeUpdateQueue和podUpdateQueue。</p>
+<p>同时在node lifecycle controller中会启动一个goroutine 执行taintManager.Run(stopCh)。</p>
+<p>kubernetes版本为1.18.6</p>
+<h2 id="初始化">初始化</h2>
+<p>NewNoExecuteTaintManager定义在pkg\controller\nodelifecycle\scheduler\taint_manager.go</p>
+<p>其中nodeUpdateQueue和podUpdateQueue为workqueue。</p>
+<p>taintedNodes是存放node上所有的noExecute taint，handlePodUpdate会从taintedNodes查询node的noExecute taint。</p>
+<p>taintEvictionQueuetaintEvictionQueue是一个TimedWorkerQueue&ndash;定时自动执行队列，介绍见后面。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// NewNoExecuteTaintManager creates a new NoExecuteTaintManager that will use passed clientset to
+</span><span class="c1">// communicate with the API server.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">NewNoExecuteTaintManager</span><span class="p">(</span><span class="nx">c</span> <span class="nx">clientset</span><span class="p">.</span><span class="nx">Interface</span><span class="p">,</span> <span class="nx">getPod</span> <span class="nx">GetPodFunc</span><span class="p">,</span> <span class="nx">getNode</span> <span class="nx">GetNodeFunc</span><span class="p">,</span> <span class="nx">getPodsAssignedToNode</span> <span class="nx">GetPodsByNodeNameFunc</span><span class="p">)</span> <span class="o">*</span><span class="nx">NoExecuteTaintManager</span> <span class="p">{</span>
+	<span class="nx">eventBroadcaster</span> <span class="o">:=</span> <span class="nx">record</span><span class="p">.</span><span class="nf">NewBroadcaster</span><span class="p">()</span>
+	<span class="nx">recorder</span> <span class="o">:=</span> <span class="nx">eventBroadcaster</span><span class="p">.</span><span class="nf">NewRecorder</span><span class="p">(</span><span class="nx">scheme</span><span class="p">.</span><span class="nx">Scheme</span><span class="p">,</span> <span class="nx">v1</span><span class="p">.</span><span class="nx">EventSource</span><span class="p">{</span><span class="nx">Component</span><span class="p">:</span> <span class="s">&#34;taint-controller&#34;</span><span class="p">})</span>
+	<span class="nx">eventBroadcaster</span><span class="p">.</span><span class="nf">StartLogging</span><span class="p">(</span><span class="nx">klog</span><span class="p">.</span><span class="nx">Infof</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">c</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">klog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">0</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Sending events to api server.&#34;</span><span class="p">)</span>
+		<span class="nx">eventBroadcaster</span><span class="p">.</span><span class="nf">StartRecordingToSink</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">v1core</span><span class="p">.</span><span class="nx">EventSinkImpl</span><span class="p">{</span><span class="nx">Interface</span><span class="p">:</span> <span class="nx">c</span><span class="p">.</span><span class="nf">CoreV1</span><span class="p">().</span><span class="nf">Events</span><span class="p">(</span><span class="s">&#34;&#34;</span><span class="p">)})</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">klog</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;kubeClient is nil when starting NodeController&#34;</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="nx">tm</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">NoExecuteTaintManager</span><span class="p">{</span>
+		<span class="nx">client</span><span class="p">:</span>                <span class="nx">c</span><span class="p">,</span>
+		<span class="nx">recorder</span><span class="p">:</span>              <span class="nx">recorder</span><span class="p">,</span>
+		<span class="nx">getPod</span><span class="p">:</span>                <span class="nx">getPod</span><span class="p">,</span>
+		<span class="nx">getNode</span><span class="p">:</span>               <span class="nx">getNode</span><span class="p">,</span>
+		<span class="nx">getPodsAssignedToNode</span><span class="p">:</span> <span class="nx">getPodsAssignedToNode</span><span class="p">,</span>
+		<span class="nx">taintedNodes</span><span class="p">:</span>          <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">][]</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Taint</span><span class="p">),</span>
+
+		<span class="nx">nodeUpdateQueue</span><span class="p">:</span> <span class="nx">workqueue</span><span class="p">.</span><span class="nf">NewNamed</span><span class="p">(</span><span class="s">&#34;noexec_taint_node&#34;</span><span class="p">),</span>
+		<span class="nx">podUpdateQueue</span><span class="p">:</span>  <span class="nx">workqueue</span><span class="p">.</span><span class="nf">NewNamed</span><span class="p">(</span><span class="s">&#34;noexec_taint_pod&#34;</span><span class="p">),</span>
+	<span class="p">}</span>
+	<span class="nx">tm</span><span class="p">.</span><span class="nx">taintEvictionQueue</span> <span class="p">=</span> <span class="nf">CreateWorkerQueue</span><span class="p">(</span><span class="nf">deletePodHandler</span><span class="p">(</span><span class="nx">c</span><span class="p">,</span> <span class="nx">tm</span><span class="p">.</span><span class="nx">emitPodDeletionEvent</span><span class="p">))</span>
+
+	<span class="k">return</span> <span class="nx">tm</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>taintEvictionQueue初始化</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">tc</span> <span class="o">*</span><span class="nx">NoExecuteTaintManager</span><span class="p">)</span> <span class="nf">emitPodDeletionEvent</span><span class="p">(</span><span class="nx">nsName</span> <span class="nx">types</span><span class="p">.</span><span class="nx">NamespacedName</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">tc</span><span class="p">.</span><span class="nx">recorder</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="nx">ref</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">v1</span><span class="p">.</span><span class="nx">ObjectReference</span><span class="p">{</span>
+		<span class="nx">Kind</span><span class="p">:</span>      <span class="s">&#34;Pod&#34;</span><span class="p">,</span>
+		<span class="nx">Name</span><span class="p">:</span>      <span class="nx">nsName</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span>
+		<span class="nx">Namespace</span><span class="p">:</span> <span class="nx">nsName</span><span class="p">.</span><span class="nx">Namespace</span><span class="p">,</span>
+	<span class="p">}</span>
+	<span class="nx">tc</span><span class="p">.</span><span class="nx">recorder</span><span class="p">.</span><span class="nf">Eventf</span><span class="p">(</span><span class="nx">ref</span><span class="p">,</span> <span class="nx">v1</span><span class="p">.</span><span class="nx">EventTypeNormal</span><span class="p">,</span> <span class="s">&#34;TaintManagerEviction&#34;</span><span class="p">,</span> <span class="s">&#34;Marking for deletion Pod %s&#34;</span><span class="p">,</span> <span class="nx">nsName</span><span class="p">.</span><span class="nf">String</span><span class="p">())</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">deletePodHandler</span><span class="p">(</span><span class="nx">c</span> <span class="nx">clientset</span><span class="p">.</span><span class="nx">Interface</span><span class="p">,</span> <span class="nx">emitEventFunc</span> <span class="kd">func</span><span class="p">(</span><span class="nx">types</span><span class="p">.</span><span class="nx">NamespacedName</span><span class="p">))</span> <span class="kd">func</span><span class="p">(</span><span class="nx">args</span> <span class="o">*</span><span class="nx">WorkArgs</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="kd">func</span><span class="p">(</span><span class="nx">args</span> <span class="o">*</span><span class="nx">WorkArgs</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+		<span class="nx">ns</span> <span class="o">:=</span> <span class="nx">args</span><span class="p">.</span><span class="nx">NamespacedName</span><span class="p">.</span><span class="nx">Namespace</span>
+		<span class="nx">name</span> <span class="o">:=</span> <span class="nx">args</span><span class="p">.</span><span class="nx">NamespacedName</span><span class="p">.</span><span class="nx">Name</span>
+		<span class="nx">klog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">0</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;NoExecuteTaintManager is deleting Pod: %v&#34;</span><span class="p">,</span> <span class="nx">args</span><span class="p">.</span><span class="nx">NamespacedName</span><span class="p">.</span><span class="nf">String</span><span class="p">())</span>
+		<span class="k">if</span> <span class="nx">emitEventFunc</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nf">emitEventFunc</span><span class="p">(</span><span class="nx">args</span><span class="p">.</span><span class="nx">NamespacedName</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="kd">var</span> <span class="nx">err</span> <span class="kt">error</span>
+		<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">retries</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+			<span class="nx">err</span> <span class="p">=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">CoreV1</span><span class="p">().</span><span class="nf">Pods</span><span class="p">(</span><span class="nx">ns</span><span class="p">).</span><span class="nf">Delete</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">TODO</span><span class="p">(),</span> <span class="nx">name</span><span class="p">,</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">DeleteOptions</span><span class="p">{})</span>
+			<span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="k">break</span>
+			<span class="p">}</span>
+			<span class="nx">time</span><span class="p">.</span><span class="nf">Sleep</span><span class="p">(</span><span class="mi">10</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Millisecond</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// CreateWorkerQueue creates a new TimedWorkerQueue for workers that will execute
+</span><span class="c1">// given function `f`.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">CreateWorkerQueue</span><span class="p">(</span><span class="nx">f</span> <span class="kd">func</span><span class="p">(</span><span class="nx">args</span> <span class="o">*</span><span class="nx">WorkArgs</span><span class="p">)</span> <span class="kt">error</span><span class="p">)</span> <span class="o">*</span><span class="nx">TimedWorkerQueue</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">TimedWorkerQueue</span><span class="p">{</span>
+		<span class="nx">workers</span><span class="p">:</span>  <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">TimedWorker</span><span class="p">),</span>
+		<span class="nx">workFunc</span><span class="p">:</span> <span class="nx">f</span><span class="p">,</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="数据结构">数据结构</h2>
+<p>NoExecuteTaintManager</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// NoExecuteTaintManager listens to Taint/Toleration changes and is responsible for removing Pods
+</span><span class="c1">// from Nodes tainted with NoExecute Taints.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">NoExecuteTaintManager</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">client</span>                <span class="nx">clientset</span><span class="p">.</span><span class="nx">Interface</span>
+	<span class="nx">recorder</span>              <span class="nx">record</span><span class="p">.</span><span class="nx">EventRecorder</span>
+    <span class="c1">// 从informer中获取pod的func
+</span><span class="c1"></span>	<span class="nx">getPod</span>                <span class="nx">GetPodFunc</span>
+    <span class="c1">// 从informer中获取pod的func
+</span><span class="c1"></span>	<span class="nx">getNode</span>               <span class="nx">GetNodeFunc</span>
+    <span class="nx">从informer中获取node上的pod的func</span>
+	<span class="nx">getPodsAssignedToNode</span> <span class="nx">GetPodsByNodeNameFunc</span>
+
+	<span class="nx">taintEvictionQueue</span> <span class="o">*</span><span class="nx">TimedWorkerQueue</span>
+	<span class="c1">// keeps a map from nodeName to all noExecute taints on that Node
+</span><span class="c1"></span>	<span class="nx">taintedNodesLock</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span>
+	<span class="nx">taintedNodes</span>     <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">][]</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Taint</span>
+
+    <span class="c1">// 从nodeUpdateQueue获取的node,会放到这里
+</span><span class="c1"></span>	<span class="nx">nodeUpdateChannels</span> <span class="p">[]</span><span class="kd">chan</span> <span class="nx">nodeUpdateItem</span>
+    <span class="c1">// 从podUpdateQueue获取的pod,会放到这里
+</span><span class="c1"></span>	<span class="nx">podUpdateChannels</span>  <span class="p">[]</span><span class="kd">chan</span> <span class="nx">podUpdateItem</span>
+
+	<span class="nx">nodeUpdateQueue</span> <span class="nx">workqueue</span><span class="p">.</span><span class="nx">Interface</span>
+	<span class="nx">podUpdateQueue</span>  <span class="nx">workqueue</span><span class="p">.</span><span class="nx">Interface</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>其中taintEvictionQueue类型是TimedWorkerQueue。TimedWorkerQueue定义在pkg\controller\nodelifecycle\scheduler\timed_workers.go，它里面包含WorkArgs对象的创建时间、需要被执行的时间，定时器、到期执行的函数。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// TimedWorkerQueue keeps a set of TimedWorkers that are still wait for execution.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">TimedWorkerQueue</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span>
+	<span class="c1">// map of workers keyed by string returned by &#39;KeyFromWorkArgs&#39; from the given worker.
+</span><span class="c1"></span>	<span class="nx">workers</span>  <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">TimedWorker</span>
+    <span class="c1">// 到期要执行的函数
+</span><span class="c1"></span>	<span class="nx">workFunc</span> <span class="kd">func</span><span class="p">(</span><span class="nx">args</span> <span class="o">*</span><span class="nx">WorkArgs</span><span class="p">)</span> <span class="kt">error</span>
+<span class="p">}</span>
+
+<span class="c1">// TimedWorker is a responsible for executing a function no earlier than at FireAt time.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">TimedWorker</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">WorkItem</span>  <span class="o">*</span><span class="nx">WorkArgs</span>
+	<span class="nx">CreatedAt</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Time</span>
+	<span class="nx">FireAt</span>    <span class="nx">time</span><span class="p">.</span><span class="nx">Time</span>
+	<span class="nx">Timer</span>     <span class="o">*</span><span class="nx">time</span><span class="p">.</span><span class="nx">Timer</span>
+<span class="p">}</span>
+
+<span class="c1">// WorkArgs keeps arguments that will be passed to the function executed by the worker.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">WorkArgs</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">NamespacedName</span> <span class="nx">types</span><span class="p">.</span><span class="nx">NamespacedName</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>NamespacedName定义在staging\src\k8s.io\apimachinery\pkg\types\namespacedname.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// NamespacedName comprises a resource name, with a mandatory namespace,
+</span><span class="c1">// rendered as &#34;&lt;namespace&gt;/&lt;name&gt;&#34;.  Being a type captures intent and
+</span><span class="c1">// helps make sure that UIDs, namespaced names and non-namespaced names
+</span><span class="c1">// do not get conflated in code.  For most use cases, namespace and name
+</span><span class="c1">// will already have been format validated at the API entry point, so we
+</span><span class="c1">// don&#39;t do that here.  Where that&#39;s not the case (e.g. in testing),
+</span><span class="c1">// consider using NamespacedNameOrDie() in testing.go in this package.
+</span><span class="c1"></span>
+<span class="kd">type</span> <span class="nx">NamespacedName</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">Namespace</span> <span class="kt">string</span>
+	<span class="nx">Name</span>      <span class="kt">string</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="运行">运行</h2>
+<p><img src="https://cdn.jsdelivr.net/gh/wu0407/assets/img/taint-manager.png" alt=""></p>
+<ol>
+<li>创建UpdateWorkerSize个类型为nodeUpdateItem的chan、缓冲区大小为10，chan集合&ndash;nodeUpdateChannels；创建UpdateWorkerSize个类型podUpdateItem的chan、缓冲区大小为10，chan集合&ndash;podUpdateChannels。其中UpdateWorkerSize为8，NodeUpdateChannelSize为10和podUpdateChannelSize为1。</li>
+<li>启动一个goroutine，执行从nodeUpdateQueue取一个nodeUpdateItem，丢进其中一个nodeUpdateChannels中，分配的算法是对node name进行hash并跟UpdateWorkerSize取模，获得chan的下标。</li>
+<li>启动一个goroutine，执行从podUpdateQueue取一个podUpdateItem，丢进其中一个podUpdateChannels，分配算法跟node一样。</li>
+<li>启动UpdateWorkerSize个goroutine，执行worker方法&ndash;处理事件逻辑都在里面。</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// Run starts NoExecuteTaintManager which will run in loop until `stopCh` is closed.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tc</span> <span class="o">*</span><span class="nx">NoExecuteTaintManager</span><span class="p">)</span> <span class="nf">Run</span><span class="p">(</span><span class="nx">stopCh</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kd">struct</span><span class="p">{})</span> <span class="p">{</span>
+	<span class="nx">klog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">0</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Starting NoExecuteTaintManager&#34;</span><span class="p">)</span>
+
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">UpdateWorkerSize</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">tc</span><span class="p">.</span><span class="nx">nodeUpdateChannels</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">tc</span><span class="p">.</span><span class="nx">nodeUpdateChannels</span><span class="p">,</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="nx">nodeUpdateItem</span><span class="p">,</span> <span class="nx">NodeUpdateChannelSize</span><span class="p">))</span>
+		<span class="nx">tc</span><span class="p">.</span><span class="nx">podUpdateChannels</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">tc</span><span class="p">.</span><span class="nx">podUpdateChannels</span><span class="p">,</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="nx">podUpdateItem</span><span class="p">,</span> <span class="nx">podUpdateChannelSize</span><span class="p">))</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Functions that are responsible for taking work items out of the workqueues and putting them
+</span><span class="c1"></span>	<span class="c1">// into channels.
+</span><span class="c1"></span>	<span class="k">go</span> <span class="kd">func</span><span class="p">(</span><span class="nx">stopCh</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kd">struct</span><span class="p">{})</span> <span class="p">{</span>
+		<span class="k">for</span> <span class="p">{</span>
+			<span class="nx">item</span><span class="p">,</span> <span class="nx">shutdown</span> <span class="o">:=</span> <span class="nx">tc</span><span class="p">.</span><span class="nx">nodeUpdateQueue</span><span class="p">.</span><span class="nf">Get</span><span class="p">()</span>
+			<span class="k">if</span> <span class="nx">shutdown</span> <span class="p">{</span>
+				<span class="k">break</span>
+			<span class="p">}</span>
+			<span class="nx">nodeUpdate</span> <span class="o">:=</span> <span class="nx">item</span><span class="p">.(</span><span class="nx">nodeUpdateItem</span><span class="p">)</span>
+			<span class="nx">hash</span> <span class="o">:=</span> <span class="nf">hash</span><span class="p">(</span><span class="nx">nodeUpdate</span><span class="p">.</span><span class="nx">nodeName</span><span class="p">,</span> <span class="nx">UpdateWorkerSize</span><span class="p">)</span>
+			<span class="k">select</span> <span class="p">{</span>
+			<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">stopCh</span><span class="p">:</span>
+				<span class="nx">tc</span><span class="p">.</span><span class="nx">nodeUpdateQueue</span><span class="p">.</span><span class="nf">Done</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
+				<span class="k">return</span>
+			<span class="k">case</span> <span class="nx">tc</span><span class="p">.</span><span class="nx">nodeUpdateChannels</span><span class="p">[</span><span class="nx">hash</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="nx">nodeUpdate</span><span class="p">:</span>
+				<span class="c1">// tc.nodeUpdateQueue.Done is called by the nodeUpdateChannels worker
+</span><span class="c1"></span>			<span class="p">}</span>
+		<span class="p">}</span>
+	<span class="p">}(</span><span class="nx">stopCh</span><span class="p">)</span>
+
+	<span class="k">go</span> <span class="kd">func</span><span class="p">(</span><span class="nx">stopCh</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kd">struct</span><span class="p">{})</span> <span class="p">{</span>
+		<span class="k">for</span> <span class="p">{</span>
+			<span class="nx">item</span><span class="p">,</span> <span class="nx">shutdown</span> <span class="o">:=</span> <span class="nx">tc</span><span class="p">.</span><span class="nx">podUpdateQueue</span><span class="p">.</span><span class="nf">Get</span><span class="p">()</span>
+			<span class="k">if</span> <span class="nx">shutdown</span> <span class="p">{</span>
+				<span class="k">break</span>
+			<span class="p">}</span>
+			<span class="c1">// The fact that pods are processed by the same worker as nodes is used to avoid races
+</span><span class="c1"></span>			<span class="c1">// between node worker setting tc.taintedNodes and pod worker reading this to decide
+</span><span class="c1"></span>			<span class="c1">// whether to delete pod.
+</span><span class="c1"></span>			<span class="c1">// It&#39;s possible that even without this assumption this code is still correct.
+</span><span class="c1"></span>			<span class="nx">podUpdate</span> <span class="o">:=</span> <span class="nx">item</span><span class="p">.(</span><span class="nx">podUpdateItem</span><span class="p">)</span>
+			<span class="nx">hash</span> <span class="o">:=</span> <span class="nf">hash</span><span class="p">(</span><span class="nx">podUpdate</span><span class="p">.</span><span class="nx">nodeName</span><span class="p">,</span> <span class="nx">UpdateWorkerSize</span><span class="p">)</span>
+			<span class="k">select</span> <span class="p">{</span>
+			<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">stopCh</span><span class="p">:</span>
+				<span class="nx">tc</span><span class="p">.</span><span class="nx">podUpdateQueue</span><span class="p">.</span><span class="nf">Done</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
+				<span class="k">return</span>
+			<span class="k">case</span> <span class="nx">tc</span><span class="p">.</span><span class="nx">podUpdateChannels</span><span class="p">[</span><span class="nx">hash</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="nx">podUpdate</span><span class="p">:</span>
+				<span class="c1">// tc.podUpdateQueue.Done is called by the podUpdateChannels worker
+</span><span class="c1"></span>			<span class="p">}</span>
+		<span class="p">}</span>
+	<span class="p">}(</span><span class="nx">stopCh</span><span class="p">)</span>
+
+	<span class="nx">wg</span> <span class="o">:=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span><span class="p">{}</span>
+	<span class="nx">wg</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">UpdateWorkerSize</span><span class="p">)</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">UpdateWorkerSize</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="k">go</span> <span class="nx">tc</span><span class="p">.</span><span class="nf">worker</span><span class="p">(</span><span class="nx">i</span><span class="p">,</span> <span class="nx">wg</span><span class="p">.</span><span class="nx">Done</span><span class="p">,</span> <span class="nx">stopCh</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="nx">wg</span><span class="p">.</span><span class="nf">Wait</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="worker">worker</h3>
+<p>消费nodeUpdateChannels和podUpdateChannels里数据，执行handleNodeUpdate和handlePodUpdate。</p>
+<p>在事件处理优先级上，node的优先级会高于pod&ndash;也就是说如果node事件和pod事件同时发生，则优先处理node事件，等nodeUpdateChannels清空后&ndash;即所有node事件处理完，再处理pod事件。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">tc</span> <span class="o">*</span><span class="nx">NoExecuteTaintManager</span><span class="p">)</span> <span class="nf">worker</span><span class="p">(</span><span class="nx">worker</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">done</span> <span class="kd">func</span><span class="p">(),</span> <span class="nx">stopCh</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kd">struct</span><span class="p">{})</span> <span class="p">{</span>
+	<span class="k">defer</span> <span class="nf">done</span><span class="p">()</span>
+
+	<span class="c1">// When processing events we want to prioritize Node updates over Pod updates,
+</span><span class="c1"></span>	<span class="c1">// as NodeUpdates that interest NoExecuteTaintManager should be handled as soon as possible -
+</span><span class="c1"></span>	<span class="c1">// we don&#39;t want user (or system) to wait until PodUpdate queue is drained before it can
+</span><span class="c1"></span>	<span class="c1">// start evicting Pods from tainted Nodes.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="p">{</span>
+		<span class="k">select</span> <span class="p">{</span>
+		<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">stopCh</span><span class="p">:</span>
+			<span class="k">return</span>
+		<span class="k">case</span> <span class="nx">nodeUpdate</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">tc</span><span class="p">.</span><span class="nx">nodeUpdateChannels</span><span class="p">[</span><span class="nx">worker</span><span class="p">]:</span>
+			<span class="nx">tc</span><span class="p">.</span><span class="nf">handleNodeUpdate</span><span class="p">(</span><span class="nx">nodeUpdate</span><span class="p">)</span>
+			<span class="nx">tc</span><span class="p">.</span><span class="nx">nodeUpdateQueue</span><span class="p">.</span><span class="nf">Done</span><span class="p">(</span><span class="nx">nodeUpdate</span><span class="p">)</span>
+		<span class="k">case</span> <span class="nx">podUpdate</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">tc</span><span class="p">.</span><span class="nx">podUpdateChannels</span><span class="p">[</span><span class="nx">worker</span><span class="p">]:</span>
+			<span class="c1">// If we found a Pod update we need to empty Node queue first.
+</span><span class="c1"></span>		<span class="nx">priority</span><span class="p">:</span>
+			<span class="k">for</span> <span class="p">{</span>
+				<span class="k">select</span> <span class="p">{</span>
+				<span class="k">case</span> <span class="nx">nodeUpdate</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">tc</span><span class="p">.</span><span class="nx">nodeUpdateChannels</span><span class="p">[</span><span class="nx">worker</span><span class="p">]:</span>
+					<span class="nx">tc</span><span class="p">.</span><span class="nf">handleNodeUpdate</span><span class="p">(</span><span class="nx">nodeUpdate</span><span class="p">)</span>
+					<span class="nx">tc</span><span class="p">.</span><span class="nx">nodeUpdateQueue</span><span class="p">.</span><span class="nf">Done</span><span class="p">(</span><span class="nx">nodeUpdate</span><span class="p">)</span>
+				<span class="k">default</span><span class="p">:</span>
+					<span class="k">break</span> <span class="nx">priority</span>
+				<span class="p">}</span>
+			<span class="p">}</span>
+			<span class="c1">// After Node queue is emptied we process podUpdate.
+</span><span class="c1"></span>			<span class="nx">tc</span><span class="p">.</span><span class="nf">handlePodUpdate</span><span class="p">(</span><span class="nx">podUpdate</span><span class="p">)</span>
+			<span class="nx">tc</span><span class="p">.</span><span class="nx">podUpdateQueue</span><span class="p">.</span><span class="nf">Done</span><span class="p">(</span><span class="nx">podUpdate</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="taintevictionqueue--定时执行队列">taintEvictionQueue&ndash;定时执行队列</h3>
+<p>上面介绍了taintEvictionQueue的类型TimedWorkerQueue的数据结构，这里说明它是如何工作的，有利于后面理解。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/wu0407/assets/img/TimedWorkerQueue.png" alt=""></p>
+<ul>
+<li>
+<p>addWork&ndash;将pod添加到队列中，并添加一个定时器，到期自动执行包装过的workFunc&ndash;这里的workFunc是执行删除pod。</p>
+<ol>
+<li>
+<p>根据key&ndash;“podNamespace/podName”，判断pod是否已经在队列里面了&ndash;workers中是否已经添加过了这个pod，已经有了直接返回。比如之前node发生更新，之后又发生更新事件，这样就会重复的调用addWork。</p>
+</li>
+<li>
+<p>执行CreateWorker创建worker&ndash;设置创建时间、执行时间、定时器、定时触发执行的func。</p>
+</li>
+<li>
+<p>将创建的worker保存到workers中。</p>
+<p>定义在pkg\controller\nodelifecycle\scheduler\timed_workers.go</p>
+</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// AddWork adds a work to the WorkerQueue which will be executed not earlier than `fireAt`.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">q</span> <span class="o">*</span><span class="nx">TimedWorkerQueue</span><span class="p">)</span> <span class="nf">AddWork</span><span class="p">(</span><span class="nx">args</span> <span class="o">*</span><span class="nx">WorkArgs</span><span class="p">,</span> <span class="nx">createdAt</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Time</span><span class="p">,</span> <span class="nx">fireAt</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Time</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">key</span> <span class="o">:=</span> <span class="nx">args</span><span class="p">.</span><span class="nf">KeyFromWorkArgs</span><span class="p">()</span>
+  <span class="nx">klog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">4</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Adding TimedWorkerQueue item %v at %v to be fired at %v&#34;</span><span class="p">,</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">createdAt</span><span class="p">,</span> <span class="nx">fireAt</span><span class="p">)</span>
+  
+  <span class="nx">q</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+  <span class="k">defer</span> <span class="nx">q</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+  <span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">exists</span> <span class="o">:=</span> <span class="nx">q</span><span class="p">.</span><span class="nx">workers</span><span class="p">[</span><span class="nx">key</span><span class="p">];</span> <span class="nx">exists</span> <span class="p">{</span>
+      <span class="nx">klog</span><span class="p">.</span><span class="nf">Warningf</span><span class="p">(</span><span class="s">&#34;Trying to add already existing work for %+v. Skipping.&#34;</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span>
+      <span class="k">return</span>
+  <span class="p">}</span>
+  <span class="nx">worker</span> <span class="o">:=</span> <span class="nf">CreateWorker</span><span class="p">(</span><span class="nx">args</span><span class="p">,</span> <span class="nx">createdAt</span><span class="p">,</span> <span class="nx">fireAt</span><span class="p">,</span> <span class="nx">q</span><span class="p">.</span><span class="nf">getWrappedWorkerFunc</span><span class="p">(</span><span class="nx">key</span><span class="p">))</span>
+  <span class="nx">q</span><span class="p">.</span><span class="nx">workers</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span> <span class="p">=</span> <span class="nx">worker</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><strong>KeyFromWorkArgs()</strong>&ndash;这里输出的格式是&quot;namespace/name&quot;，即“podNamespace/podName”。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// 定义在pkg\controller\nodelifecycle\scheduler\timed_workers.go
+</span><span class="c1">// KeyFromWorkArgs creates a key for the given `WorkArgs`
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">w</span> <span class="o">*</span><span class="nx">WorkArgs</span><span class="p">)</span> <span class="nf">KeyFromWorkArgs</span><span class="p">()</span> <span class="kt">string</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">w</span><span class="p">.</span><span class="nx">NamespacedName</span><span class="p">.</span><span class="nf">String</span><span class="p">()</span>
+<span class="p">}</span>
+  
+<span class="c1">// 定义在staging\src\k8s.io\apimachinery\pkg\types\namespacedname.go
+</span><span class="c1"></span><span class="kd">const</span> <span class="p">(</span>
+  <span class="nx">Separator</span> <span class="p">=</span> <span class="sc">&#39;/&#39;</span>
+<span class="p">)</span>
+  
+<span class="c1">// String returns the general purpose string representation
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="nx">NamespacedName</span><span class="p">)</span> <span class="nf">String</span><span class="p">()</span> <span class="kt">string</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%s%c%s&#34;</span><span class="p">,</span> <span class="nx">n</span><span class="p">.</span><span class="nx">Namespace</span><span class="p">,</span> <span class="nx">Separator</span><span class="p">,</span> <span class="nx">n</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>**getWrappedWorkerFunc(key)**返回一个<code> func(args *WorkArgs) error</code>&ndash;对workFunc进行包装，其中workFunc在taint manager初始化里定义了执行删除pod（上面初始化段落里说明）。</p>
+<p>这里面返回包装函数执行逻辑：</p>
+<ol>
+<li>执行workFunc</li>
+<li>执行成功，将key在workers中保存的信息设置成nil。为什么要设置成nil，是因为在 AddWork中会判断key是否已经在队列中，防止执行完删除pod之后又被添加进队列&ndash;感觉这是预防性编程。执行成功的key，没有执行cancelWorkWithEvent不会再添加进来。</li>
+<li>执行不成功，从workers中删除这个key。这样后面还可以添加到队列里。</li>
+</ol>
+<p>定义在pkg\controller\nodelifecycle\scheduler\timed_workers.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">q</span> <span class="o">*</span><span class="nx">TimedWorkerQueue</span><span class="p">)</span> <span class="nf">getWrappedWorkerFunc</span><span class="p">(</span><span class="nx">key</span> <span class="kt">string</span><span class="p">)</span> <span class="kd">func</span><span class="p">(</span><span class="nx">args</span> <span class="o">*</span><span class="nx">WorkArgs</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kd">func</span><span class="p">(</span><span class="nx">args</span> <span class="o">*</span><span class="nx">WorkArgs</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+      <span class="nx">err</span> <span class="o">:=</span> <span class="nx">q</span><span class="p">.</span><span class="nf">workFunc</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span>
+      <span class="nx">q</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+      <span class="k">defer</span> <span class="nx">q</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+      <span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+          <span class="c1">// To avoid duplicated calls we keep the key in the queue, to prevent
+</span><span class="c1"></span>          <span class="c1">// subsequent additions.
+</span><span class="c1"></span>          <span class="nx">q</span><span class="p">.</span><span class="nx">workers</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span> <span class="p">=</span> <span class="kc">nil</span>
+      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+          <span class="nb">delete</span><span class="p">(</span><span class="nx">q</span><span class="p">.</span><span class="nx">workers</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span>
+      <span class="p">}</span>
+      <span class="k">return</span> <span class="nx">err</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><strong>CreateWorker</strong>&ndash;创建一个worker，并执行包装过的workFunc。</p>
+<p>如果fireAt时间在createdat时间之前，说明应该立即执行，所以起一个goroutine执行上面包装过的workFunc。</p>
+<p>否则使用time.AfterFunc起一个定时器，在fireAt-createdAt时间后，启动一个goroutine执行上面包装过的workFunc。这个是自执行队列的关键，这就是TimedWorkerQueue队列，为什么不需要func来消费。</p>
+<p>返回一个TimedWorker。</p>
+<p>定义在pkg\controller\nodelifecycle\scheduler\timed_workers.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// CreateWorker creates a TimedWorker that will execute `f` not earlier than `fireAt`.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">CreateWorker</span><span class="p">(</span><span class="nx">args</span> <span class="o">*</span><span class="nx">WorkArgs</span><span class="p">,</span> <span class="nx">createdAt</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Time</span><span class="p">,</span> <span class="nx">fireAt</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Time</span><span class="p">,</span> <span class="nx">f</span> <span class="kd">func</span><span class="p">(</span><span class="nx">args</span> <span class="o">*</span><span class="nx">WorkArgs</span><span class="p">)</span> <span class="kt">error</span><span class="p">)</span> <span class="o">*</span><span class="nx">TimedWorker</span> <span class="p">{</span>
+  <span class="nx">delay</span> <span class="o">:=</span> <span class="nx">fireAt</span><span class="p">.</span><span class="nf">Sub</span><span class="p">(</span><span class="nx">createdAt</span><span class="p">)</span>
+  <span class="k">if</span> <span class="nx">delay</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="p">{</span>
+      <span class="k">go</span> <span class="nf">f</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span>
+      <span class="k">return</span> <span class="kc">nil</span>
+  <span class="p">}</span>
+  <span class="nx">timer</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">AfterFunc</span><span class="p">(</span><span class="nx">delay</span><span class="p">,</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span> <span class="nf">f</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">})</span>
+  <span class="k">return</span> <span class="o">&amp;</span><span class="nx">TimedWorker</span><span class="p">{</span>
+      <span class="nx">WorkItem</span><span class="p">:</span>  <span class="nx">args</span><span class="p">,</span>
+      <span class="nx">CreatedAt</span><span class="p">:</span> <span class="nx">createdAt</span><span class="p">,</span>
+      <span class="nx">FireAt</span><span class="p">:</span>    <span class="nx">fireAt</span><span class="p">,</span>
+      <span class="nx">Timer</span><span class="p">:</span>     <span class="nx">timer</span><span class="p">,</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>CancelWork&ndash;pod从队列中移除</p>
+<p>判断key是否在workers中，如果存在且不为nil，说明还未执行，则执行Cancel()&ndash;终止worker中的定时器，wokers中移除这个key。</p>
+<p>定义在pkg\controller\nodelifecycle\scheduler\timed_workers.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// CancelWork removes scheduled function execution from the queue. Returns true if work was cancelled.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">q</span> <span class="o">*</span><span class="nx">TimedWorkerQueue</span><span class="p">)</span> <span class="nf">CancelWork</span><span class="p">(</span><span class="nx">key</span> <span class="kt">string</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
+  <span class="nx">q</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+  <span class="k">defer</span> <span class="nx">q</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+  <span class="nx">worker</span><span class="p">,</span> <span class="nx">found</span> <span class="o">:=</span> <span class="nx">q</span><span class="p">.</span><span class="nx">workers</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span>
+  <span class="nx">result</span> <span class="o">:=</span> <span class="kc">false</span>
+  <span class="k">if</span> <span class="nx">found</span> <span class="p">{</span>
+      <span class="nx">klog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">4</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Cancelling TimedWorkerQueue item %v at %v&#34;</span><span class="p">,</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">())</span>
+      <span class="k">if</span> <span class="nx">worker</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+          <span class="nx">result</span> <span class="p">=</span> <span class="kc">true</span>
+          <span class="nx">worker</span><span class="p">.</span><span class="nf">Cancel</span><span class="p">()</span>
+      <span class="p">}</span>
+      <span class="nb">delete</span><span class="p">(</span><span class="nx">q</span><span class="p">.</span><span class="nx">workers</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">result</span>
+<span class="p">}</span>
+  
+<span class="c1">// Cancel cancels the execution of function by the `TimedWorker`
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">w</span> <span class="o">*</span><span class="nx">TimedWorker</span><span class="p">)</span> <span class="nf">Cancel</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="nx">w</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+      <span class="nx">w</span><span class="p">.</span><span class="nx">Timer</span><span class="p">.</span><span class="nf">Stop</span><span class="p">()</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<h3 id="handlenodeupdate--处理node事件">handleNodeUpdate&ndash;处理node事件</h3>
+<p>依次遍历node上的pod，判断pod的toleration是否能容忍node上的noExcute taint，不能完全容忍则直接删除pod，能够完全容忍则等待最小tolerationSeconds，然后执行删除pod。</p>
+<ol>
+<li>从informer中获取node信息，如果node不存在&ndash;说明node被删除了，则从taintedNodes中将node删除；如果是其他错误，直接返回。这里为什么要taintedNodes里删除这个node？因为后面handlePodUpdate会从taintedNodes里获取node的noExcute taint&ndash;node不存在肯定没有taint。</li>
+<li>将node的noExcute taint保存到taintedNodes中。判断node是否有noExcute taint，如果没有则从taintedNodes中将node删除，同时将node上的所有pod从taintEvictionQueue中移除&ndash;执行cancelWorkWithEvent，然后返回&ndash;无需处理这个node；否则保存node的noExcute taint到taintedNodes中。</li>
+<li>判断node上是否有pod，如果没有pod则直接返回。</li>
+<li>对node上的所有pod，依次执行processPodOnNode&ndash;pod上的noExcute toleration是否都能容忍node上的noExcute taint，如果不能则删除pod；如果能，则等待toleration里最小的时间后删除pod。</li>
+</ol>
+<p>定义在pkg\controller\nodelifecycle\scheduler\taint_manager.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">//执行驱逐node上面的pod--不能容忍node的tains
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tc</span> <span class="o">*</span><span class="nx">NoExecuteTaintManager</span><span class="p">)</span> <span class="nf">handleNodeUpdate</span><span class="p">(</span><span class="nx">nodeUpdate</span> <span class="nx">nodeUpdateItem</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">node</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tc</span><span class="p">.</span><span class="nf">getNode</span><span class="p">(</span><span class="nx">nodeUpdate</span><span class="p">.</span><span class="nx">nodeName</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">apierrors</span><span class="p">.</span><span class="nf">IsNotFound</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+			<span class="c1">// Delete
+</span><span class="c1"></span>			<span class="nx">klog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">4</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Noticed node deletion: %#v&#34;</span><span class="p">,</span> <span class="nx">nodeUpdate</span><span class="p">.</span><span class="nx">nodeName</span><span class="p">)</span>
+			<span class="nx">tc</span><span class="p">.</span><span class="nx">taintedNodesLock</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+			<span class="k">defer</span> <span class="nx">tc</span><span class="p">.</span><span class="nx">taintedNodesLock</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+			<span class="nb">delete</span><span class="p">(</span><span class="nx">tc</span><span class="p">.</span><span class="nx">taintedNodes</span><span class="p">,</span> <span class="nx">nodeUpdate</span><span class="p">.</span><span class="nx">nodeName</span><span class="p">)</span>
+			<span class="k">return</span>
+		<span class="p">}</span>
+		<span class="nx">utilruntime</span><span class="p">.</span><span class="nf">HandleError</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;cannot get node %s: %v&#34;</span><span class="p">,</span> <span class="nx">nodeUpdate</span><span class="p">.</span><span class="nx">nodeName</span><span class="p">,</span> <span class="nx">err</span><span class="p">))</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Create or Update
+</span><span class="c1"></span>	<span class="nx">klog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">4</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Noticed node update: %#v&#34;</span><span class="p">,</span> <span class="nx">nodeUpdate</span><span class="p">)</span>
+	<span class="nx">taints</span> <span class="o">:=</span> <span class="nf">getNoExecuteTaints</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Taints</span><span class="p">)</span>
+	<span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+		<span class="nx">tc</span><span class="p">.</span><span class="nx">taintedNodesLock</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+		<span class="k">defer</span> <span class="nx">tc</span><span class="p">.</span><span class="nx">taintedNodesLock</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+		<span class="nx">klog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">4</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Updating known taints on node %v: %v&#34;</span><span class="p">,</span> <span class="nx">node</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">taints</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">taints</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="nb">delete</span><span class="p">(</span><span class="nx">tc</span><span class="p">.</span><span class="nx">taintedNodes</span><span class="p">,</span> <span class="nx">node</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="nx">tc</span><span class="p">.</span><span class="nx">taintedNodes</span><span class="p">[</span><span class="nx">node</span><span class="p">.</span><span class="nx">Name</span><span class="p">]</span> <span class="p">=</span> <span class="nx">taints</span>
+		<span class="p">}</span>
+	<span class="p">}()</span>
+
+	<span class="c1">// This is critical that we update tc.taintedNodes before we call getPodsAssignedToNode:
+</span><span class="c1"></span>	<span class="c1">// getPodsAssignedToNode can be delayed as long as all future updates to pods will call
+</span><span class="c1"></span>	<span class="c1">// tc.PodUpdated which will use tc.taintedNodes to potentially delete delayed pods.
+</span><span class="c1"></span>	<span class="nx">pods</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tc</span><span class="p">.</span><span class="nf">getPodsAssignedToNode</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">klog</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="nx">err</span><span class="p">.</span><span class="nf">Error</span><span class="p">())</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">pods</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="c1">// Short circuit, to make this controller a bit faster.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">taints</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">klog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">4</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;All taints were removed from the Node %v. Cancelling all evictions...&#34;</span><span class="p">,</span> <span class="nx">node</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+		<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">pods</span> <span class="p">{</span>
+			<span class="nx">tc</span><span class="p">.</span><span class="nf">cancelWorkWithEvent</span><span class="p">(</span><span class="nx">types</span><span class="p">.</span><span class="nx">NamespacedName</span><span class="p">{</span><span class="nx">Namespace</span><span class="p">:</span> <span class="nx">pods</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">Namespace</span><span class="p">,</span> <span class="nx">Name</span><span class="p">:</span> <span class="nx">pods</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">Name</span><span class="p">})</span>
+		<span class="p">}</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="nx">now</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">()</span>
+	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">pod</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">pods</span> <span class="p">{</span>
+		<span class="nx">podNamespacedName</span> <span class="o">:=</span> <span class="nx">types</span><span class="p">.</span><span class="nx">NamespacedName</span><span class="p">{</span><span class="nx">Namespace</span><span class="p">:</span> <span class="nx">pod</span><span class="p">.</span><span class="nx">Namespace</span><span class="p">,</span> <span class="nx">Name</span><span class="p">:</span> <span class="nx">pod</span><span class="p">.</span><span class="nx">Name</span><span class="p">}</span>
+		<span class="nx">tc</span><span class="p">.</span><span class="nf">processPodOnNode</span><span class="p">(</span><span class="nx">podNamespacedName</span><span class="p">,</span> <span class="nx">node</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">pod</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Tolerations</span><span class="p">,</span> <span class="nx">taints</span><span class="p">,</span> <span class="nx">now</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="cancelworkwithevent">cancelWorkWithEvent</h4>
+<p>从taintEvictionQueue中移除pod的work，移除成功就发送一个取消pod驱逐event。</p>
+<p>定义在pkg\controller\nodelifecycle\scheduler\taint_manager.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">tc</span> <span class="o">*</span><span class="nx">NoExecuteTaintManager</span><span class="p">)</span> <span class="nf">cancelWorkWithEvent</span><span class="p">(</span><span class="nx">nsName</span> <span class="nx">types</span><span class="p">.</span><span class="nx">NamespacedName</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">tc</span><span class="p">.</span><span class="nx">taintEvictionQueue</span><span class="p">.</span><span class="nf">CancelWork</span><span class="p">(</span><span class="nx">nsName</span><span class="p">.</span><span class="nf">String</span><span class="p">())</span> <span class="p">{</span>
+		<span class="nx">tc</span><span class="p">.</span><span class="nf">emitCancelPodDeletionEvent</span><span class="p">(</span><span class="nx">nsName</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">tc</span> <span class="o">*</span><span class="nx">NoExecuteTaintManager</span><span class="p">)</span> <span class="nf">emitCancelPodDeletionEvent</span><span class="p">(</span><span class="nx">nsName</span> <span class="nx">types</span><span class="p">.</span><span class="nx">NamespacedName</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">tc</span><span class="p">.</span><span class="nx">recorder</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="nx">ref</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">v1</span><span class="p">.</span><span class="nx">ObjectReference</span><span class="p">{</span>
+		<span class="nx">Kind</span><span class="p">:</span>      <span class="s">&#34;Pod&#34;</span><span class="p">,</span>
+		<span class="nx">Name</span><span class="p">:</span>      <span class="nx">nsName</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span>
+		<span class="nx">Namespace</span><span class="p">:</span> <span class="nx">nsName</span><span class="p">.</span><span class="nx">Namespace</span><span class="p">,</span>
+	<span class="p">}</span>
+	<span class="nx">tc</span><span class="p">.</span><span class="nx">recorder</span><span class="p">.</span><span class="nf">Eventf</span><span class="p">(</span><span class="nx">ref</span><span class="p">,</span> <span class="nx">v1</span><span class="p">.</span><span class="nx">EventTypeNormal</span><span class="p">,</span> <span class="s">&#34;TaintManagerEviction&#34;</span><span class="p">,</span> <span class="s">&#34;Cancelling deletion of Pod %s&#34;</span><span class="p">,</span> <span class="nx">nsName</span><span class="p">.</span><span class="nf">String</span><span class="p">())</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="processpodonnode">processPodOnNode</h4>
+<p>对taint和toleration进行比较，判断出是否能够完全容忍taint。如果不能完全容忍，立即删除pod。否则等待能够容忍的toleration中的tolerationSeconds最小时间，然后执行删除pod。</p>
+<ol>
+<li>判断taint是否为空，为空就执行cancelWorkWithEvent&ndash;队列中移除这个pod的worker。</li>
+<li>对taint和toleration进行比较，判断出是否能够完全容忍taint。如果不能完全容忍，那就先执行cancelWorkWithEvent&ndash;防止如果pod已经在队列中，不能添加到队列中去；然后执行AddWork，设置created、fired时间为现在&ndash;立即执行删除pod。</li>
+<li>执行getMinTolerationTime计算能够容忍的toleration中的tolerationSeconds最小时间</li>
+<li>判断是否在队列中已经存在这个pod的worker，如果存在则判断原来的created时间，是否是过去时间，如果是过去时间，直接返回&ndash;维持原来的worker执行；不是过去时间则执行cancelWorkWithEvent&ndash;移除存在的pod worker。</li>
+<li>执行AddWork，设置created为现在、fired时间为现在时间+最小的tolerationSeconds。</li>
+</ol>
+<p>定义在pkg\controller\nodelifecycle\scheduler\taint_manager.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">tc</span> <span class="o">*</span><span class="nx">NoExecuteTaintManager</span><span class="p">)</span> <span class="nf">processPodOnNode</span><span class="p">(</span>
+	<span class="nx">podNamespacedName</span> <span class="nx">types</span><span class="p">.</span><span class="nx">NamespacedName</span><span class="p">,</span>
+	<span class="nx">nodeName</span> <span class="kt">string</span><span class="p">,</span>
+	<span class="nx">tolerations</span> <span class="p">[]</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Toleration</span><span class="p">,</span>
+	<span class="nx">taints</span> <span class="p">[]</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Taint</span><span class="p">,</span>
+	<span class="nx">now</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Time</span><span class="p">,</span>
+<span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">taints</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">tc</span><span class="p">.</span><span class="nf">cancelWorkWithEvent</span><span class="p">(</span><span class="nx">podNamespacedName</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="nx">allTolerated</span><span class="p">,</span> <span class="nx">usedTolerations</span> <span class="o">:=</span> <span class="nx">v1helper</span><span class="p">.</span><span class="nf">GetMatchingTolerations</span><span class="p">(</span><span class="nx">taints</span><span class="p">,</span> <span class="nx">tolerations</span><span class="p">)</span>
+	<span class="k">if</span> <span class="p">!</span><span class="nx">allTolerated</span> <span class="p">{</span>
+		<span class="nx">klog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">2</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Not all taints are tolerated after update for Pod %v on %v&#34;</span><span class="p">,</span> <span class="nx">podNamespacedName</span><span class="p">.</span><span class="nf">String</span><span class="p">(),</span> <span class="nx">nodeName</span><span class="p">)</span>
+		<span class="c1">// We&#39;re canceling scheduled work (if any), as we&#39;re going to delete the Pod right away.
+</span><span class="c1"></span>		<span class="c1">// 先在taintEvictionQueue移除该podNamespacedName，因为AddWork中会判断如果在队列中，不能再添加了，我们要重置create time， fired time。
+</span><span class="c1"></span>		<span class="nx">tc</span><span class="p">.</span><span class="nf">cancelWorkWithEvent</span><span class="p">(</span><span class="nx">podNamespacedName</span><span class="p">)</span>
+		<span class="c1">//taintEvictionQueue里面包含了定时器，定时器触发执行处理函数，所以不需要其他func来处理这个队列
+</span><span class="c1"></span>		<span class="nx">tc</span><span class="p">.</span><span class="nx">taintEvictionQueue</span><span class="p">.</span><span class="nf">AddWork</span><span class="p">(</span><span class="nf">NewWorkArgs</span><span class="p">(</span><span class="nx">podNamespacedName</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">podNamespacedName</span><span class="p">.</span><span class="nx">Namespace</span><span class="p">),</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">(),</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">())</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="nx">minTolerationTime</span> <span class="o">:=</span> <span class="nf">getMinTolerationTime</span><span class="p">(</span><span class="nx">usedTolerations</span><span class="p">)</span>
+	<span class="c1">// getMinTolerationTime returns negative value to denote infinite toleration.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">minTolerationTime</span> <span class="p">&lt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">klog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">4</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;New tolerations for %v tolerate forever. Scheduled deletion won&#39;t be cancelled if already scheduled.&#34;</span><span class="p">,</span> <span class="nx">podNamespacedName</span><span class="p">.</span><span class="nf">String</span><span class="p">())</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="nx">startTime</span> <span class="o">:=</span> <span class="nx">now</span>
+	<span class="nx">triggerTime</span> <span class="o">:=</span> <span class="nx">startTime</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">minTolerationTime</span><span class="p">)</span>
+	<span class="nx">scheduledEviction</span> <span class="o">:=</span> <span class="nx">tc</span><span class="p">.</span><span class="nx">taintEvictionQueue</span><span class="p">.</span><span class="nf">GetWorkerUnsafe</span><span class="p">(</span><span class="nx">podNamespacedName</span><span class="p">.</span><span class="nf">String</span><span class="p">())</span>
+	<span class="k">if</span> <span class="nx">scheduledEviction</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">startTime</span> <span class="p">=</span> <span class="nx">scheduledEviction</span><span class="p">.</span><span class="nx">CreatedAt</span>
+		<span class="c1">//startTime在现在之前，代表work在过去创建的，之前触发驱逐， 合法不做任何操作，保留原来的work
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">startTime</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">minTolerationTime</span><span class="p">).</span><span class="nf">Before</span><span class="p">(</span><span class="nx">triggerTime</span><span class="p">)</span> <span class="p">{</span>
+			<span class="k">return</span>
+		<span class="p">}</span>
+		<span class="c1">//work创建时间在未来/现在，取消原来的work，新建一个work
+</span><span class="c1"></span>		<span class="nx">tc</span><span class="p">.</span><span class="nf">cancelWorkWithEvent</span><span class="p">(</span><span class="nx">podNamespacedName</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="nx">tc</span><span class="p">.</span><span class="nx">taintEvictionQueue</span><span class="p">.</span><span class="nf">AddWork</span><span class="p">(</span><span class="nf">NewWorkArgs</span><span class="p">(</span><span class="nx">podNamespacedName</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">podNamespacedName</span><span class="p">.</span><span class="nx">Namespace</span><span class="p">),</span> <span class="nx">startTime</span><span class="p">,</span> <span class="nx">triggerTime</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="handlepodupdate">handlePodUpdate</h3>
+<p>判断pod的toleration是否能够容忍node上的noExcute taint，如果不能完全容忍则直接删除这个pod，能够完全容忍则等待最小的tolerationSeconds时间，然后删除pod。</p>
+<ol>
+<li>从informer中获取pod信息，如果pod不存在&ndash;说明pod被已经删除了，则执行cancelWorkWithEvent&ndash;从队列中将pod worker移除。如果发生其他错误，直接返回。</li>
+<li>检查pod绑定的node是否发生改变，如果改变了，直接返回</li>
+<li>检查node name是否为空，代表pod还未被调度，直接返回。</li>
+<li>检查node是否有noExcute taint&ndash;从taintedNodes里获取node的noExcute taint，如果没有，说明node被删除或者node没有noExcute taint，直接返回。这也是在handleNodeUpdate里，更新taintedNodes原因。</li>
+<li>执行processPodOnNode</li>
+</ol>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">xiaoqing</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">
+        2021-01-03
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">License</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/kubernetes/">kubernetes</a>
+          <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">源码解析</a>
+          </div>
+      <nav class="post-nav">
+        
+        <a class="next" href="/post/node-lifecycle-controller-manager/">
+            <span class="next-text nav-default">Node Lifecycle Controller Manager源码解析</span>
+            <span class="next-text nav-mobile">Next</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:your@email.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/wu0407" class="iconfont icon-github" title="github"></a>
+  <a href="https://midbai.com/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021<span class="heart"><i class="iconfont icon-heart"></i></span><span>xiaoqing</span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.c12618f9a600c40bd024996677e951e64d3487006775aeb22e200c990006c5c7.js"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-29100285-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>
