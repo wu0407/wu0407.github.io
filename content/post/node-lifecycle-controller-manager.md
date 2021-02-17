@@ -4,7 +4,7 @@ date: 2020-12-26T20:50:47+08:00
 draft: false
 description: "kubernetes Node Lifecycle Controller Manager源码解析"
 keywords:  [ "kubernetes", "controller manager", "node", "Node Lifecycle Controller Manager","源码解析"]
-tags:  ["kubernetes", "源码解析"]
+tags:  ["kubernetes", "源码解析", "kube-controller-manager"]
 categories:  ["kubernetes"]
 ---
 

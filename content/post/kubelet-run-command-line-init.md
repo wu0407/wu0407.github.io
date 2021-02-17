@@ -4,7 +4,7 @@ date: 2021-02-17T12:07:53+08:00
 draft: false
 description: "kubernetes kubelet 源码解析之命令行初始化"
 keywords:  [ "kubernetes", "kubelet","源码解析"]
-tags:  ["kubernetes", "源码解析"]
+tags:  ["kubernetes", "源码解析", "kubelet"]
 categories:  ["kubernetes"]
 ---
 
