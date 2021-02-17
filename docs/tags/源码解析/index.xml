@@ -6,7 +6,16 @@
     <description>Recent content in 源码解析 on xiaoqing</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Sun, 03 Jan 2021 22:29:10 +0800</lastBuildDate><atom:link href="https://midbai.com/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Wed, 17 Feb 2021 12:07:53 +0800</lastBuildDate><atom:link href="https://midbai.com/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>kubelet启动--命令行初始化</title>
+      <link>https://midbai.com/post/kubelet-run-command-line-init/</link>
+      <pubDate>Wed, 17 Feb 2021 12:07:53 +0800</pubDate>
+      
+      <guid>https://midbai.com/post/kubelet-run-command-line-init/</guid>
+      <description>概述 kubelet命令行参数有177个，是kubernetes组件中配置项最多的。 kubelet的选项分为三类，一类是kubletFlags&amp;ndash;（启动之后不能随时改变的，只能通过命令行配置，比如ip地址、路径等）；另一类是kube</description>
+    </item>
+    
     <item>
       <title>Taint Manager源码解析</title>
       <link>https://midbai.com/post/taint-manager/</link>

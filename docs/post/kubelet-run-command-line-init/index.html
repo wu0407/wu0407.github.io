@@ -1,0 +1,2282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>kubelet启动--命令行初始化 - xiaoqing</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="xiaoqing" /><meta name="description" content="kubernetes kubelet 源码解析之命令行初始化" /><meta name="keywords" content="kubernetes, kubelet, 源码解析" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.79.1 with theme even" />
+
+
+<link rel="canonical" href="https://midbai.com/post/kubelet-run-command-line-init/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.c7bc1becf36bcf6a9ebd25d2947e43a2eb745ddb0c9a32b43126fd7fa460c351.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="kubelet启动--命令行初始化" />
+<meta property="og:description" content="kubernetes kubelet 源码解析之命令行初始化" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://midbai.com/post/kubelet-run-command-line-init/" />
+<meta property="article:published_time" content="2021-02-17T12:07:53+08:00" />
+<meta property="article:modified_time" content="2021-02-17T12:07:53+08:00" />
+<meta itemprop="name" content="kubelet启动--命令行初始化">
+<meta itemprop="description" content="kubernetes kubelet 源码解析之命令行初始化">
+<meta itemprop="datePublished" content="2021-02-17T12:07:53+08:00" />
+<meta itemprop="dateModified" content="2021-02-17T12:07:53+08:00" />
+<meta itemprop="wordCount" content="9022">
+
+
+
+<meta itemprop="keywords" content="kubernetes,源码解析," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="kubelet启动--命令行初始化"/>
+<meta name="twitter:description" content="kubernetes kubelet 源码解析之命令行初始化"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">xiaoqing blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">Categories</li>
+      </a><a href="/categories/kubernetes/">
+        <li class="mobile-menu-item">Kubernetes</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">xiaoqing blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">Categories</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/kubernetes/">Kubernetes</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">kubelet启动--命令行初始化</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2021-02-17 </span>
+        <div class="post-category">
+            <a href="/categories/kubernetes/"> kubernetes </a>
+            </div>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Contents</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#概述">概述</a>
+      <ul>
+        <li><a href="#启动过程">启动过程</a></li>
+        <li><a href="#创建cobra-command">创建cobra Command</a>
+          <ul>
+            <li><a href="#kubeletflags选项">kubeletFlags选项</a></li>
+            <li><a href="#kubeletconfigurationflag选项">kubeletConfigurationFlag选项</a></li>
+            <li><a href="#globalflags">GlobalFlags</a></li>
+            <li><a href="#help选项">help选项</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <h1 id="概述">概述</h1>
+<p>kubelet命令行参数有177个，是kubernetes组件中配置项最多的。</p>
+<p>kubelet的选项分为三类，一类是kubletFlags&ndash;（启动之后不能随时改变的，只能通过命令行配置，比如ip地址、路径等）；另一类是kubeletConfiguration&ndash;（可以在启动之后进行修改，可以通过命令行设置或配置文件或者dynamic Kubelet config&ndash;configmap，通过命令行配置是DEPRECATED,一些选项只能通过配置文件设置&ndash;比如NodeStatusReportFrequency）；最后是globalFlags&ndash;（只能通过命令行配置，比如日志级别、日志路径、版本）。</p>
+<p>kubelet是如何启动、初始化并识别这么多选项的？本文就是讲kubelet启动过程中的命令初始化，至于各个组件的运行过程，后续文章再来分析。</p>
+<p>本文基于kubernetes 1.18.6版本，请访问<a href="https://github.com/wu0407/kubernetes-code-analysis">源代码阅读仓库</a>。</p>
+<h2 id="启动过程">启动过程</h2>
+<p>kubelet入口文件在<code>cmd\kubelet\kubelet.go</code>，主要流程</p>
+<ol>
+<li>初始化随机因子</li>
+<li>创建一个cobra Command</li>
+<li>初始化日志</li>
+<li>执行cobra Command</li>
+</ol>
+<h2 id="创建cobra-command">创建cobra Command</h2>
+<p>这个阶段进行命令行选项的定义、默认值的设置、command的各个字段定义、命令帮助函数和命令使用函数。</p>
+<p>主要流程</p>
+<ul>
+<li>
+<p>这里新建一个name为kubelet的flagset，为了拥有干净的flagset（不会被CommandLine的flagset污染），而不用cobra的命令行解析。</p>
+</li>
+<li>
+<p>同时设置flagset的NormalizeFunc&ndash;将flag名包含下划线&quot;_&ldquo;转为横杆”-“，比如&ndash;iptables-drop-bit和&ndash;iptables_drop_bit是一样的。</p>
+</li>
+<li>
+<p>新建一个kubeletFlags里面包含了一些初始选项的默认值：</p>
+<p>具体的field对应的命令行选项见下面<a href="#kubeletflags%E9%80%89%E9%A1%B9">kubeletFlags选项</a>，NewKubeletFlags()定义在cmd\kubelet\app\options\options.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// NewKubeletFlags will create a new KubeletFlags with default values
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">NewKubeletFlags</span><span class="p">()</span> <span class="o">*</span><span class="nx">KubeletFlags</span> <span class="p">{</span>
+    <span class="nx">remoteRuntimeEndpoint</span> <span class="o">:=</span> <span class="s">&#34;&#34;</span>
+    <span class="k">if</span> <span class="nx">runtime</span><span class="p">.</span><span class="nx">GOOS</span> <span class="o">==</span> <span class="s">&#34;linux&#34;</span> <span class="p">{</span>
+        <span class="nx">remoteRuntimeEndpoint</span> <span class="p">=</span> <span class="s">&#34;unix:///var/run/dockershim.sock&#34;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">runtime</span><span class="p">.</span><span class="nx">GOOS</span> <span class="o">==</span> <span class="s">&#34;windows&#34;</span> <span class="p">{</span>
+        <span class="nx">remoteRuntimeEndpoint</span> <span class="p">=</span> <span class="s">&#34;npipe:////./pipe/dockershim&#34;</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">KubeletFlags</span><span class="p">{</span>
+        <span class="nx">EnableServer</span><span class="p">:</span>                        <span class="kc">true</span><span class="p">,</span>
+        <span class="nx">ContainerRuntimeOptions</span><span class="p">:</span>             <span class="o">*</span><span class="nf">NewContainerRuntimeOptions</span><span class="p">(),</span>
+        <span class="nx">CertDirectory</span><span class="p">:</span>                       <span class="s">&#34;/var/lib/kubelet/pki&#34;</span><span class="p">,</span>
+        <span class="nx">RootDirectory</span><span class="p">:</span>                       <span class="nx">defaultRootDir</span><span class="p">,</span> <span class="c1">// defaultRootDir为/var/lib/kubelet
+</span><span class="c1"></span>        <span class="nx">MasterServiceNamespace</span><span class="p">:</span>              <span class="nx">metav1</span><span class="p">.</span><span class="nx">NamespaceDefault</span><span class="p">,</span> <span class="c1">// NamespaceDefault为default
+</span><span class="c1"></span>        <span class="nx">MaxContainerCount</span><span class="p">:</span>                   <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="nx">MaxPerPodContainerCount</span><span class="p">:</span>             <span class="mi">1</span><span class="p">,</span>
+        <span class="nx">MinimumGCAge</span><span class="p">:</span>                        <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+        <span class="nx">NonMasqueradeCIDR</span><span class="p">:</span>                   <span class="s">&#34;10.0.0.0/8&#34;</span><span class="p">,</span>
+        <span class="nx">RegisterSchedulable</span><span class="p">:</span>                 <span class="kc">true</span><span class="p">,</span>
+        <span class="nx">ExperimentalKernelMemcgNotification</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+        <span class="nx">RemoteRuntimeEndpoint</span><span class="p">:</span>               <span class="nx">remoteRuntimeEndpoint</span><span class="p">,</span>
+        <span class="nx">NodeLabels</span><span class="p">:</span>                          <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">),</span>
+        <span class="nx">VolumePluginDir</span><span class="p">:</span>                     <span class="s">&#34;/usr/libexec/kubernetes/kubelet-plugins/volume/exec/&#34;</span><span class="p">,</span>
+        <span class="nx">RegisterNode</span><span class="p">:</span>                        <span class="kc">true</span><span class="p">,</span>
+        <span class="nx">SeccompProfileRoot</span><span class="p">:</span>                  <span class="nx">filepath</span><span class="p">.</span><span class="nf">Join</span><span class="p">(</span><span class="nx">defaultRootDir</span><span class="p">,</span> <span class="s">&#34;seccomp&#34;</span><span class="p">),</span>
+        <span class="c1">// prior to the introduction of this flag, there was a hardcoded cap of 50 images
+</span><span class="c1"></span>        <span class="nx">NodeStatusMaxImages</span><span class="p">:</span>         <span class="mi">50</span><span class="p">,</span>
+        <span class="nx">EnableCAdvisorJSONEndpoints</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>其中NewContainerRuntimeOptions()定义在cmd\kubelet\app\options\container_runtime.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">const</span> <span class="p">(</span>
+    <span class="c1">// When these values are updated, also update test/utils/image/manifest.go
+</span><span class="c1"></span>    <span class="nx">defaultPodSandboxImageName</span>    <span class="p">=</span> <span class="s">&#34;k8s.gcr.io/pause&#34;</span>
+    <span class="nx">defaultPodSandboxImageVersion</span> <span class="p">=</span> <span class="s">&#34;3.2&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">var</span> <span class="p">(</span>
+    <span class="nx">defaultPodSandboxImage</span> <span class="p">=</span> <span class="nx">defaultPodSandboxImageName</span> <span class="o">+</span>
+        <span class="s">&#34;:&#34;</span> <span class="o">+</span> <span class="nx">defaultPodSandboxImageVersion</span>
+<span class="p">)</span>
+
+<span class="c1">// NewContainerRuntimeOptions will create a new ContainerRuntimeOptions with
+</span><span class="c1">// default values.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">NewContainerRuntimeOptions</span><span class="p">()</span> <span class="o">*</span><span class="nx">config</span><span class="p">.</span><span class="nx">ContainerRuntimeOptions</span> <span class="p">{</span>
+    <span class="nx">dockerEndpoint</span> <span class="o">:=</span> <span class="s">&#34;&#34;</span>
+    <span class="k">if</span> <span class="nx">runtime</span><span class="p">.</span><span class="nx">GOOS</span> <span class="o">!=</span> <span class="s">&#34;windows&#34;</span> <span class="p">{</span>
+        <span class="nx">dockerEndpoint</span> <span class="p">=</span> <span class="s">&#34;unix:///var/run/docker.sock&#34;</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">config</span><span class="p">.</span><span class="nx">ContainerRuntimeOptions</span><span class="p">{</span>
+        <span class="nx">ContainerRuntime</span><span class="p">:</span>           <span class="nx">kubetypes</span><span class="p">.</span><span class="nx">DockerContainerRuntime</span><span class="p">,</span> <span class="c1">//DockerContainerRuntime为docker
+</span><span class="c1"></span>        <span class="nx">RedirectContainerStreaming</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+        <span class="nx">DockerEndpoint</span><span class="p">:</span>             <span class="nx">dockerEndpoint</span><span class="p">,</span>
+        <span class="nx">DockershimRootDirectory</span><span class="p">:</span>    <span class="s">&#34;/var/lib/dockershim&#34;</span><span class="p">,</span>
+        <span class="nx">PodSandboxImage</span><span class="p">:</span>            <span class="nx">defaultPodSandboxImage</span><span class="p">,</span>
+        <span class="nx">ImagePullProgressDeadline</span><span class="p">:</span>  <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">1</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Minute</span><span class="p">},</span>
+        <span class="nx">ExperimentalDockershim</span><span class="p">:</span>     <span class="kc">false</span><span class="p">,</span>
+
+        <span class="c1">//Alpha feature
+</span><span class="c1"></span>        <span class="nx">CNIBinDir</span><span class="p">:</span>   <span class="s">&#34;/opt/cni/bin&#34;</span><span class="p">,</span>
+        <span class="nx">CNIConfDir</span><span class="p">:</span>  <span class="s">&#34;/etc/cni/net.d&#34;</span><span class="p">,</span>
+        <span class="nx">CNICacheDir</span><span class="p">:</span> <span class="s">&#34;/var/lib/cni/cache&#34;</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>创建一个kubeletConfiguration，用于设置kubeletConfiguration的flag选项的默认值，它通过创建v1beta1的KubeletConfiguration 然后通过scheme.Default()生成默认的配置，再通过scheme.Convert转换成内部的KubeletConfiguration。</p>
+<p>具体的field对应的命令行选项见下面<a href="#kubeletconfigurationflag%E9%80%89%E9%A1%B9">kubeletConfigurationFlag选项</a></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"> <span class="nx">KubeletConfiguration</span><span class="p">{</span>
+      <span class="nx">SyncFrequency</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">1</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Minute</span><span class="p">},</span>
+      <span class="nx">FileCheckFrequency</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">20</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">},</span>
+      <span class="nx">HTTPCheckFrequency</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">20</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">},</span>
+      <span class="nx">Address</span><span class="p">:</span> <span class="s">&#34;0.0.0.0&#34;</span><span class="p">,</span>
+      <span class="nx">Port</span><span class="p">:</span> <span class="mi">10250</span><span class="p">,</span>
+      <span class="nx">Authentication</span><span class="p">.</span><span class="nx">Anonymous</span><span class="p">.</span><span class="nx">Enabled</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span> <span class="c1">// by applyLegacyDefaults, by default false,
+</span><span class="c1"></span>      <span class="nx">Authentication</span><span class="p">.</span><span class="nx">Webhook</span><span class="p">.</span><span class="nx">Enabled</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span> <span class="c1">// by applyLegacyDefaults, by default true,
+</span><span class="c1"></span>      <span class="nx">Authentication</span><span class="p">.</span><span class="nx">Webhook</span><span class="p">.</span><span class="nx">CacheTTL</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Minute</span><span class="p">},</span>
+      <span class="nx">Authorization</span><span class="p">.</span><span class="nx">Mode</span><span class="p">:</span> <span class="s">&#34;AlwaysAllow&#34;</span><span class="p">,</span> <span class="c1">// by applyLegacyDefaults, by default &#34;webhook&#34;,
+</span><span class="c1"></span>      <span class="nx">Authorization</span><span class="p">.</span><span class="nx">Webhook</span><span class="p">.</span><span class="nx">CacheAuthorizedTTL</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">5</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Minute</span><span class="p">},</span>
+      <span class="nx">Authorization</span><span class="p">.</span><span class="nx">Webhook</span><span class="p">.</span><span class="nx">CacheUnauthorizedTTL</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">30</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">},</span>
+      <span class="nx">ReadOnlyPort</span><span class="p">:</span> <span class="mi">10255</span><span class="p">,</span> <span class="c1">// by applyLegacyDefaults,
+</span><span class="c1"></span>      <span class="nx">RegistryPullQPS</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+      <span class="nx">RegistryBurst</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+      <span class="nx">EventRecordQPS</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+      <span class="nx">EventBurst</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+      <span class="nx">EnableDebuggingHandlers</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+      <span class="nx">HealthzPort</span><span class="p">:</span> <span class="mi">10248</span><span class="p">,</span>
+      <span class="nx">HealthzBindAddress</span><span class="p">:</span> <span class="s">&#34;127.0.0.1&#34;</span><span class="p">,</span>
+      <span class="nx">OOMScoreAdj</span><span class="p">:</span> <span class="o">-</span><span class="mi">999</span><span class="p">,</span>
+      <span class="nx">StreamingConnectionIdleTimeout</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">4</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Hour</span><span class="p">},</span>
+      <span class="nx">NodeStatusReportFrequency</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">5</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Minute</span><span class="p">},</span>
+      <span class="nx">NodeStatusUpdateFrequency</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">10</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">},</span>
+      <span class="nx">NodeLeaseDurationSeconds</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span>
+      <span class="nx">ImageMinimumGCAge</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Minute</span><span class="p">},</span>
+      <span class="nx">ImageGCHighThresholdPercent</span><span class="p">:</span> <span class="mi">85</span><span class="p">,</span>
+      <span class="nx">ImageGCLowThresholdPercent</span><span class="p">:</span> <span class="mi">80</span><span class="p">,</span>
+      <span class="nx">VolumeStatsAggPeriod</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Minute</span><span class="p">},</span>
+      <span class="nx">CgroupsPerQOS</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+      <span class="nx">CgroupDriver</span><span class="p">:</span> <span class="s">&#34;cgroupfs&#34;</span><span class="p">,</span>
+      <span class="nx">CPUManagerPolicy</span><span class="p">:</span> <span class="s">&#34;none&#34;</span><span class="p">,</span>
+      <span class="nx">CPUManagerReconcilePeriod</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">10</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">},</span>
+      <span class="nx">TopologyManagerPolicy</span><span class="p">:</span> <span class="s">&#34;none&#34;</span><span class="p">,</span>
+      <span class="nx">RuntimeRequestTimeout</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Minute</span><span class="p">},</span>
+      <span class="nx">HairpinMode</span><span class="p">:</span> <span class="s">&#34;promiscuous-bridge&#34;</span><span class="p">,</span>
+      <span class="nx">MaxPods</span><span class="p">:</span> <span class="mi">110</span><span class="p">,</span>
+      <span class="nx">PodPidsLimit</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+      <span class="nx">ResolverConfig</span><span class="p">:</span> <span class="s">&#34;/etc/resolv.conf&#34;</span><span class="p">,</span>
+      <span class="nx">CPUCFSQuota</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+      <span class="nx">CPUCFSQuotaPeriod</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">100</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Millisecond</span><span class="p">},</span>
+      <span class="nx">MaxOpenFiles</span><span class="p">:</span> <span class="mi">1000000</span><span class="p">,</span>
+      <span class="nx">ContentType</span><span class="p">:</span> <span class="s">&#34;application/vnd.kubernetes.protobuf&#34;</span><span class="p">,</span>
+      <span class="nx">KubeAPIQPS</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+      <span class="nx">KubeAPIBurst</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+      <span class="nx">SerializeImagePulls</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+      <span class="nx">EvictionHard</span><span class="p">:</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span>
+          <span class="s">&#34;memory.available&#34;</span><span class="p">:</span>  <span class="s">&#34;100Mi&#34;</span><span class="p">,</span>
+          <span class="s">&#34;nodefs.available&#34;</span><span class="p">:</span>  <span class="s">&#34;10%&#34;</span><span class="p">,</span>
+          <span class="s">&#34;nodefs.inodesFree&#34;</span><span class="p">:</span> <span class="s">&#34;5%&#34;</span><span class="p">,</span>
+          <span class="s">&#34;imagefs.available&#34;</span><span class="p">:</span> <span class="s">&#34;15%&#34;</span><span class="p">,</span>
+      <span class="p">},</span>
+      <span class="nx">EvictionPressureTransitionPeriod</span><span class="p">:</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">Duration</span><span class="p">{</span><span class="nx">Duration</span><span class="p">:</span> <span class="mi">5</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Minute</span><span class="p">},</span>
+      <span class="nx">EnableControllerAttachDetach</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+      <span class="nx">MakeIPTablesUtilChains</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+      <span class="nx">IPTablesMasqueradeBit</span><span class="p">:</span> <span class="mi">14</span><span class="p">,</span>
+      <span class="nx">IPTablesDropBit</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span>
+      <span class="nx">FailSwapOn</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+      <span class="nx">ContainerLogMaxSize</span><span class="p">:</span> <span class="s">&#34;10Mi&#34;</span><span class="p">,</span>
+      <span class="nx">ContainerLogMaxFiles</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+      <span class="nx">ConfigMapAndSecretChangeDetectionStrategy</span><span class="p">:</span> <span class="s">&#34;Watch&#34;</span><span class="p">,</span>
+      <span class="nx">EnforceNodeAllocatable</span><span class="p">:</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;pods&#34;</span><span class="p">},</span>
+  <span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>创建cobra.Command，定义了Use、Long、DisableFlagParsing、Run这四个字段。</p>
+</li>
+<li>
+<p>kubeletFlags选项添加到flagset</p>
+</li>
+<li>
+<p>kubeletConfigurationFlag选项添加到flagset</p>
+</li>
+<li>
+<p>globalFlag添加到flagset，globalFlag包含klog、verflag、Cadvisor、logflush相关选项</p>
+</li>
+<li>
+<p>设置help选项</p>
+</li>
+<li>
+<p>自定义command的helpfunc和usageFunc</p>
+</li>
+</ul>
+<p>看到这里会发现kubelet并没有使用cobra的命令解析和定义、helpfunc和usageFunc，这是为什么呢？</p>
+<p>是因为globalFlag里面定义的选项flag，都是定义在pflag.Command下面&ndash;通过import模块自动注册。而cobra默认的helpfunc和usageFunc和excute会执行mergePersistentFlags()&ndash;会引入pflag.Command的flag，由于历史原因有一些不需要的选项也注册在pflag.Command， 它们也会被引用进来，所以才会新建一个flagset并自己解析命令，保持干净。</p>
+<p>代码注释中也提到了，只是不是很详细</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go">	<span class="c1">// keep cleanFlagSet separate, so Cobra doesn&#39;t pollute it with the global flags
+</span><span class="c1"></span>	<span class="nx">kubeletFlags</span><span class="p">.</span><span class="nf">AddFlags</span><span class="p">(</span><span class="nx">cleanFlagSet</span><span class="p">)</span>
+	<span class="nx">options</span><span class="p">.</span><span class="nf">AddKubeletConfigFlags</span><span class="p">(</span><span class="nx">cleanFlagSet</span><span class="p">,</span> <span class="nx">kubeletConfig</span><span class="p">)</span>
+	<span class="nx">options</span><span class="p">.</span><span class="nf">AddGlobalFlags</span><span class="p">(</span><span class="nx">cleanFlagSet</span><span class="p">)</span>
+	<span class="nx">cleanFlagSet</span><span class="p">.</span><span class="nf">BoolP</span><span class="p">(</span><span class="s">&#34;help&#34;</span><span class="p">,</span> <span class="s">&#34;h&#34;</span><span class="p">,</span> <span class="kc">false</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;help for %s&#34;</span><span class="p">,</span> <span class="nx">cmd</span><span class="p">.</span><span class="nf">Name</span><span class="p">()))</span>
+
+	<span class="c1">// ugly, but necessary, because Cobra&#39;s default UsageFunc and HelpFunc pollute the flagset with global flags
+</span><span class="c1"></span>	<span class="kd">const</span> <span class="nx">usageFmt</span> <span class="p">=</span> <span class="s">&#34;Usage:\n  %s\n\nFlags:\n%s&#34;</span>
+	<span class="nx">cmd</span><span class="p">.</span><span class="nf">SetUsageFunc</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Fprintf</span><span class="p">(</span><span class="nx">cmd</span><span class="p">.</span><span class="nf">OutOrStderr</span><span class="p">(),</span> <span class="nx">usageFmt</span><span class="p">,</span> <span class="nx">cmd</span><span class="p">.</span><span class="nf">UseLine</span><span class="p">(),</span> <span class="nx">cleanFlagSet</span><span class="p">.</span><span class="nf">FlagUsagesWrapped</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+		<span class="k">return</span> <span class="kc">nil</span>
+	<span class="p">})</span>
+	<span class="nx">cmd</span><span class="p">.</span><span class="nf">SetHelpFunc</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Fprintf</span><span class="p">(</span><span class="nx">cmd</span><span class="p">.</span><span class="nf">OutOrStdout</span><span class="p">(),</span> <span class="s">&#34;%s\n\n&#34;</span><span class="o">+</span><span class="nx">usageFmt</span><span class="p">,</span> <span class="nx">cmd</span><span class="p">.</span><span class="nx">Long</span><span class="p">,</span> <span class="nx">cmd</span><span class="p">.</span><span class="nf">UseLine</span><span class="p">(),</span> <span class="nx">cleanFlagSet</span><span class="p">.</span><span class="nf">FlagUsagesWrapped</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+	<span class="p">})</span>
+
+
+<span class="c1">// AddGlobalFlags explicitly registers flags that libraries (glog, verflag, etc.) register
+</span><span class="c1">// against the global flagsets from &#34;flag&#34; and &#34;github.com/spf13/pflag&#34;.
+</span><span class="c1">// We do this in order to prevent unwanted flags from leaking into the Kubelet&#39;s flagset.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">AddGlobalFlags</span><span class="p">(</span><span class="nx">fs</span> <span class="o">*</span><span class="nx">pflag</span><span class="p">.</span><span class="nx">FlagSet</span><span class="p">)</span> <span class="p">{</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="kubeletflags选项">kubeletFlags选项</h3>
+<p>kubeletFlags 包含kubelet运行中不能改变的选项、或者不能安全改变的选项、不能再不同的实例共享的。</p>
+<p>KubeletConfiguration定义了不同实例能够共享的选项。</p>
+<blockquote>
+<p>// KubeletFlags contains configuration flags for the Kubelet.</p>
+<p>// A configuration field should go in KubeletFlags instead of KubeletConfiguration if any of these are true:</p>
+<p>// - its value will never, or cannot safely be changed during the lifetime of a node, or</p>
+<p>// - its value cannot be safely shared between nodes at the same time (e.g. a hostname);</p>
+<p>//  KubeletConfiguration is intended to be shared between nodes.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>categories分类</th>
+<th>var变量</th>
+<th>flag</th>
+<th>default默认值</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ContainerRuntimeOptions</td>
+<td>ContainerRuntime</td>
+<td>&ndash;container-runtime</td>
+<td>docker</td>
+<td>The container runtime to use. Possible values: &lsquo;docker&rsquo;, &lsquo;remote&rsquo;.</td>
+</tr>
+<tr>
+<td>ContainerRuntimeOptions</td>
+<td>RuntimeCgroups</td>
+<td>&ndash;runtime-cgroups</td>
+<td>&quot;&rdquo;</td>
+<td>Optional absolute name of cgroups to create and run the runtime in.</td>
+</tr>
+<tr>
+<td>ContainerRuntimeOptions</td>
+<td>RedirectContainerStreaming</td>
+<td>&ndash;redirect-container-streaming</td>
+<td>false</td>
+<td>Enables container streaming redirect. If false, kubelet will proxy container streaming data between apiserver and container runtime; if true, kubelet will return an http redirect to apiserver, and apiserver will access container runtime directly. The proxy approach is more secure, but introduces some overhead. The redirect approach is more performant, but less secure because the connection between apiserver and container runtime may not be authenticated.</td>
+</tr>
+<tr>
+<td>ContainerRuntimeOptions  docker</td>
+<td>ExperimentalDockershim</td>
+<td>&ndash;experimental-dockershim</td>
+<td>false</td>
+<td>Enable dockershim only mode. In this mode, kubelet will only start dockershim without any other functionalities. This flag only serves test purpose, please do not use it unless you are conscious of what you are doing. [default=false]</td>
+</tr>
+<tr>
+<td>ContainerRuntimeOptions     docker</td>
+<td>DockershimRootDirectory</td>
+<td>&ndash;experimental-dockershim-root-directory</td>
+<td>/var/lib/dockershim</td>
+<td>Path to the dockershim root directory.</td>
+</tr>
+<tr>
+<td>ContainerRuntimeOptions        docker</td>
+<td>PodSandboxImage</td>
+<td>&ndash;pod-infra-container-image</td>
+<td>k8s.gcr.io/pause:3.2</td>
+<td>The image whose network/ipc namespaces containers in each pod will use.</td>
+</tr>
+<tr>
+<td>ContainerRuntimeOptions        docker</td>
+<td>DockerEndpoint</td>
+<td>&ndash;docker-endpoint</td>
+<td>unix:///var/run/docker.sock</td>
+<td>Use this for the docker endpoint to communicate with.</td>
+</tr>
+<tr>
+<td>ContainerRuntimeOptions        docker</td>
+<td>ImagePullProgressDeadline.Duration</td>
+<td>&ndash;image-pull-progress-deadline</td>
+<td>1 * time.Minute</td>
+<td>If no pulling progress is made before this deadline, the image pulling will be cancelled.</td>
+</tr>
+<tr>
+<td>ContainerRuntimeOptions        docker</td>
+<td>NetworkPluginName</td>
+<td>&ndash;network-plugin</td>
+<td>&quot;&quot;</td>
+<td>&lt;Warning: Alpha feature&gt; The name of the network plugin to be invoked for various events in kubelet/pod lifecycle.</td>
+</tr>
+<tr>
+<td>ContainerRuntimeOptions        docker</td>
+<td>CNIConfDir</td>
+<td>&ndash;cni-conf-dir</td>
+<td>/opt/cni/conf.d</td>
+<td>&ldquo;&lt;Warning: Alpha feature&gt; The full path of the directory in which to search for CNI config files.</td>
+</tr>
+<tr>
+<td>ContainerRuntimeOptions        docker</td>
+<td>CNIBinDir</td>
+<td>&ndash;cni-bin-dir</td>
+<td>/opt/cni/bin</td>
+<td>&lt;Warning: Alpha feature&gt; A comma-separated list of full paths of directories in which to search for CNI plugin binaries.</td>
+</tr>
+<tr>
+<td>ContainerRuntimeOptions        docker</td>
+<td>CNICacheDir</td>
+<td>&ndash;cni-cache-dir</td>
+<td>/var/lib/cni/cache</td>
+<td>&lt;Warning: Alpha feature&gt; The full path of the directory in which CNI should store cache files.</td>
+</tr>
+<tr>
+<td>ContainerRuntimeOptions        docker</td>
+<td>NetworkPluginMTU</td>
+<td>&ndash;network-plugin-mtu</td>
+<td>0</td>
+<td>&lt;Warning: Alpha feature&gt; The MTU to be passed to the network plugin, to override the default. Set to 0 to use the default 1460 MTU.</td>
+</tr>
+<tr>
+<td>main</td>
+<td>KubeletConfigFile</td>
+<td>&ndash;config</td>
+<td>&quot;&rdquo;</td>
+<td>The Kubelet will load its initial configuration from this file. The path may be absolute or relative; relative paths start at the Kubelet&rsquo;s current working directory. Omit this flag to use the built-in default configuration values. Command-line flags override configuration from this file.</td>
+</tr>
+<tr>
+<td>main</td>
+<td>KubeConfig</td>
+<td>&ndash;kubeconfig</td>
+<td>&quot;&quot;</td>
+<td>Path to a kubeconfig file, specifying how to connect to the API server. Providing &ndash;kubeconfig enables API server mode, omitting &ndash;kubeconfig enables standalone mode.</td>
+</tr>
+<tr>
+<td>main</td>
+<td>BootstrapKubeconfig</td>
+<td>&ndash;bootstrap-kubeconfig</td>
+<td>&quot;&quot;</td>
+<td>Path to a kubeconfig file that will be used to get client certificate for kubelet. If the file specified by &ndash;kubeconfig does not exist, the bootstrap kubeconfig is used to request a client certificate from the API server. On success, a kubeconfig file referencing the generated client certificate and key is written to the path specified by &ndash;kubeconfig. The client certificate and key file will be stored in the directory pointed by &ndash;cert-dir.</td>
+</tr>
+<tr>
+<td>main</td>
+<td>ReallyCrashForTesting</td>
+<td>&ndash;really-crash-for-testing</td>
+<td>false</td>
+<td>If true, when panics occur crash. Intended for testing.</td>
+</tr>
+<tr>
+<td>main</td>
+<td>ChaosChance</td>
+<td>&ndash;chaos-chance</td>
+<td>0</td>
+<td>If &gt; 0.0, introduce random client errors and latency. Intended for testing.</td>
+</tr>
+<tr>
+<td>main</td>
+<td>RunOnce</td>
+<td>&ndash;runonce</td>
+<td>false</td>
+<td>If true, exit after spawning pods from static pod files or remote urls. Exclusive with &ndash;enable-server</td>
+</tr>
+<tr>
+<td>main</td>
+<td>EnableServer</td>
+<td>&ndash;enable-server</td>
+<td>true</td>
+<td>Enable the Kubelet&rsquo;s server</td>
+</tr>
+<tr>
+<td>main</td>
+<td>HostnameOverride</td>
+<td>&ndash;hostname-override</td>
+<td>&quot;&quot;</td>
+<td>If non-empty, will use this string as identification instead of the actual hostname. If &ndash;cloud-provider is set, the cloud provider determines the name of the node (consult cloud provider documentation to determine if and how the hostname is used).</td>
+</tr>
+<tr>
+<td>main</td>
+<td>NodeIP</td>
+<td>&ndash;node-ip</td>
+<td>&quot;&quot;</td>
+<td>IP address of the node. If set, kubelet will use this IP address for the node. If unset, kubelet will use the node&rsquo;s default IPv4 address, if any, or its default IPv6 address if it has no IPv4 addresses. You can pass <code>::</code> to make it prefer the default IPv6 address rather than the default IPv4 address.</td>
+</tr>
+<tr>
+<td>main</td>
+<td>ProviderID</td>
+<td>&ndash;provider-id</td>
+<td>&quot;&quot;</td>
+<td>Unique identifier for identifying the node in a machine database, i.e cloudprovider</td>
+</tr>
+<tr>
+<td>main</td>
+<td>CertDirectory</td>
+<td>&ndash;cert-dir</td>
+<td>/var/lib/kubelet/pki</td>
+<td>The directory where the TLS certs are located. If &ndash;tls-cert-file and &ndash;tls-private-key-file are provided, this flag will be ignored.</td>
+</tr>
+<tr>
+<td>main</td>
+<td>CloudProvider</td>
+<td>&ndash;cloud-provider</td>
+<td>&quot;&quot;</td>
+<td>The path to the cloud provider configuration file. Empty string for no configuration file.</td>
+</tr>
+<tr>
+<td>main</td>
+<td>CloudConfigFile</td>
+<td>&ndash;cloud-config</td>
+<td>&quot;&quot;</td>
+<td>The path to the cloud provider configuration file. Empty string for no configuration file.</td>
+</tr>
+<tr>
+<td>main</td>
+<td>RootDirectory</td>
+<td>&ndash;root-dir</td>
+<td>/var/lib/kubelet</td>
+<td>Directory path for managing kubelet files (volume mounts,etc).</td>
+</tr>
+<tr>
+<td>main</td>
+<td>DynamicConfigDir</td>
+<td>&ndash;dynamic-config-dir</td>
+<td>&quot;&quot;</td>
+<td>The Kubelet will use this directory for checkpointing downloaded configurations and tracking configuration health. The Kubelet will create this directory if it does not already exist. The path may be absolute or relative; relative paths start at the Kubelet&rsquo;s current working directory. Providing this flag enables dynamic Kubelet configuration. The DynamicKubeletConfig feature gate must be enabled to pass this flag; this gate currently defaults to true because the feature is beta.</td>
+</tr>
+<tr>
+<td>main</td>
+<td>RegisterNode</td>
+<td>&ndash;register-node</td>
+<td>true</td>
+<td>Register the node with the apiserver. If &ndash;kubeconfig is not provided, this flag is irrelevant, as the Kubelet won&rsquo;t have an apiserver to register with.</td>
+</tr>
+<tr>
+<td>experimental</td>
+<td>ExperimentalMounterPath</td>
+<td>&ndash;experimental-mounter-path</td>
+<td>&quot;&quot;</td>
+<td>[Experimental] Path of mounter binary. Leave empty to use the default mount.</td>
+</tr>
+<tr>
+<td>experimental</td>
+<td>ExperimentalKernelMemcgNotification</td>
+<td>&ndash;experimental-kernel-memcg-notification</td>
+<td>false</td>
+<td>If enabled, the kubelet will integrate with the kernel memcg notification to determine if memory eviction thresholds are crossed rather than polling.</td>
+</tr>
+<tr>
+<td>experimental</td>
+<td>RemoteRuntimeEndpoint</td>
+<td>&ndash;container-runtime-endpoint</td>
+<td>unix:///var/run/dockershim.sock</td>
+<td>&ldquo;[Experimental] The endpoint of remote runtime service. Currently unix socket endpoint is supported on Linux, while npipe and tcp endpoints are supported on windows. Examples:&lsquo;unix:///var/run/dockershim.sock&rsquo;, &lsquo;npipe:////./pipe/dockershim&rsquo;</td>
+</tr>
+<tr>
+<td>experimental</td>
+<td>RemoteImageEndpoint</td>
+<td>&ndash;image-service-endpoint</td>
+<td>&quot;&rdquo;</td>
+<td>[Experimental] The endpoint of remote image service. If not specified, it will be the same with container-runtime-endpoint by default. Currently unix socket endpoint is supported on Linux, while npipe and tcp endpoints are supported on windows. Examples:&lsquo;unix:///var/run/dockershim.sock&rsquo;, &lsquo;npipe:////./pipe/dockershim&rsquo;</td>
+</tr>
+<tr>
+<td>experimental</td>
+<td>ExperimentalCheckNodeCapabilitiesBeforeMount</td>
+<td>&ndash;experimental-check-node-capabilities-before-mount</td>
+<td>false</td>
+<td>[Experimental] if set true, the kubelet will check the underlying node for required components (binaries, etc.) before performing the mount</td>
+</tr>
+<tr>
+<td>experimental</td>
+<td>ExperimentalNodeAllocatableIgnoreEvictionThreshold</td>
+<td>&ndash;experimental-allocatable-ignore-eviction</td>
+<td>false</td>
+<td>When set to &lsquo;true&rsquo;, Hard Eviction Thresholds will be ignored while calculating Node Allocatable. See <a href="https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/">https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/</a> for more details. [default=false]</td>
+</tr>
+<tr>
+<td>experimental</td>
+<td>NodeLabels</td>
+<td>&ndash;node-labels</td>
+<td>&quot;&quot;</td>
+<td>&lt;Warning: Alpha feature&gt; Labels to add when registering the node in the cluster.  Labels must be key=value pairs separated by &lsquo;,&rsquo;. Labels in the &lsquo;kubernetes.io&rsquo; namespace must begin with an allowed prefix (kubelet.kubernetes.io, node.kubernetes.io) or be in the specifically allowed set (beta.kubernetes.io/arch, beta.kubernetes.io/instance-type, beta.kubernetes.io/os, failure-domain.beta.kubernetes.io/region, failure-domain.beta.kubernetes.io/zone, kubernetes.io/arch, kubernetes.io/hostname, kubernetes.io/os, node.kubernetes.io/instance-type, topology.kubernetes.io/region, topology.kubernetes.io/zone)</td>
+</tr>
+<tr>
+<td>experimental</td>
+<td>VolumePluginDir</td>
+<td>&ndash;volume-plugin-dir</td>
+<td>/usr/libexec/kubernetes/kubelet-plugins/volume/exec/</td>
+<td>The full path of the directory in which to search for additional third party volume plugins</td>
+</tr>
+<tr>
+<td>experimental</td>
+<td>LockFilePath</td>
+<td>&ndash;lock-file</td>
+<td>&quot;&quot;</td>
+<td>&lt;Warning: Alpha feature&gt; The path to file for kubelet to use as a lock file.</td>
+</tr>
+<tr>
+<td>experimental</td>
+<td>ExitOnLockContention</td>
+<td>&ndash;exit-on-lock-contention</td>
+<td>false</td>
+<td>Whether kubelet should exit upon lock-file contention.</td>
+</tr>
+<tr>
+<td>experimental</td>
+<td>SeccompProfileRoot</td>
+<td>&ndash;seccomp-profile-root</td>
+<td>/var/lib/kubelet/seccomp</td>
+<td>&lt;Warning: Alpha feature&gt; Directory path for seccomp profiles.</td>
+</tr>
+<tr>
+<td>experimental</td>
+<td>BootstrapCheckpointPath</td>
+<td>&ndash;bootstrap-checkpoint-path</td>
+<td>&quot;&quot;</td>
+<td>&lt;Warning: Alpha feature&gt; Path to the directory where the checkpoints are stored</td>
+</tr>
+<tr>
+<td>experimental</td>
+<td>NodeStatusMaxImages</td>
+<td>&ndash;node-status-max-images</td>
+<td>50</td>
+<td>&lt;Warning: Alpha feature&gt; The maximum number of images to report in Node.Status.Images. If -1 is specified, no cap will be applied.</td>
+</tr>
+<tr>
+<td>deprecated</td>
+<td>BootstrapKubeconfig</td>
+<td>&ndash;experimental-bootstrap-kubeconfig</td>
+<td>&quot;&quot;</td>
+<td>Use &ndash;bootstrap-kubeconfig</td>
+</tr>
+<tr>
+<td>deprecated</td>
+<td>MinimumGCAge.Duration</td>
+<td>&ndash;minimum-container-ttl-duration</td>
+<td>0</td>
+<td>Minimum age for a finished container before it is garbage collected. Examples: &lsquo;300ms&rsquo;, &rsquo;10s' or &lsquo;2h45m&rsquo;. Use &ndash;eviction-hard or &ndash;eviction-soft instead. Will be removed in a future version.</td>
+</tr>
+<tr>
+<td>deprecated</td>
+<td>MaxPerPodContainerCount</td>
+<td>&ndash;maximum-dead-containers-per-container</td>
+<td>1</td>
+<td>Maximum number of old instances to retain per container. Each container takes up some disk space. Use &ndash;eviction-hard or &ndash;eviction-soft instead. Will be removed in a future version.</td>
+</tr>
+<tr>
+<td>deprecated</td>
+<td>MaxContainerCount</td>
+<td>&ndash;maximum-dead-containers</td>
+<td>-1</td>
+<td>Maximum number of old instances of containers to retain globally. Each container takes up some disk space. To disable, set to a negative number. Use &ndash;eviction-hard or &ndash;eviction-soft instead. Will be removed in a future version.</td>
+</tr>
+<tr>
+<td>deprecated</td>
+<td>MasterServiceNamespace</td>
+<td>&ndash;master-service-namespace</td>
+<td>default</td>
+<td>The namespace from which the kubernetes master services should be injected into pods. This flag will be removed in a future version.</td>
+</tr>
+<tr>
+<td>deprecated</td>
+<td>RegisterSchedulable</td>
+<td>&ndash;register-schedulable</td>
+<td>true</td>
+<td>Register the node as schedulable. Won&rsquo;t have any effect if register-node is false. This flag will be removed in a future version.</td>
+</tr>
+<tr>
+<td>deprecated</td>
+<td>NonMasqueradeCIDR</td>
+<td>&ndash;non-masquerade-cidr</td>
+<td>10.0.0.0/8</td>
+<td>Traffic to IPs outside this range will use IP masquerade. Set to &lsquo;0.0.0.0/0&rsquo; to never masquerade. This flag will be removed in a future version.</td>
+</tr>
+<tr>
+<td>deprecated</td>
+<td>KeepTerminatedPodVolumes</td>
+<td>&ndash;keep-terminated-pod-volumes</td>
+<td>false</td>
+<td>Keep terminated pod volumes mounted to the node after the pod terminates. Can be useful for debugging volume related issues.   This flag will be removed in a future version.</td>
+</tr>
+<tr>
+<td>deprecated</td>
+<td>EnableCAdvisorJSONEndpoints</td>
+<td>&ndash;enable-cadvisor-json-endpoints</td>
+<td>false</td>
+<td>Enable cAdvisor json /spec and /stats/* endpoints. This flag will be removed in a future version.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="kubeletconfigurationflag选项">kubeletConfigurationFlag选项</h3>
+<p>kubeletConfigurationFlag分为两类，  一类<code>deprecated command line</code>是可以在命令行（即将被废弃）和配置文件和dynamic kubelet config中配置的，另一类<code>configuration</code>是不能配置在命令行的，只能在配置文件中和dynamic kubelet config中。</p>
+<table>
+<thead>
+<tr>
+<th>categories分类</th>
+<th>var变量</th>
+<th>flag</th>
+<th>default默认值</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>deprecated command line</td>
+<td>FailSwapOn</td>
+<td>&ndash;fail-swap-on</td>
+<td>true</td>
+<td>Makes the Kubelet fail to start if swap is enabled on the node.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>StaticPodPath</td>
+<td>&ndash;pod-manifest-path</td>
+<td>&quot;&quot;</td>
+<td>Path to the directory containing static pod files to run, or the path to a single static pod file. Files starting with dots will be ignored.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>SyncFrequency.Duration</td>
+<td>&ndash;sync-frequency</td>
+<td>1 * time.Minute</td>
+<td>Max period between synchronizing running containers and config</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>FileCheckFrequency.Duration</td>
+<td>&ndash;file-check-frequency</td>
+<td>20 * time.Second</td>
+<td>Duration between checking config files for new data</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>HTTPCheckFrequency.Duration</td>
+<td>&ndash;http-check-frequency</td>
+<td>20 * time.Second</td>
+<td>Duration between checking http for new data</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>StaticPodURL</td>
+<td>&ndash;manifest-url</td>
+<td>&quot;&quot;</td>
+<td>URL for accessing additional Pod specifications to run</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>StaticPodURLHeader</td>
+<td>&ndash;manifest-url-header</td>
+<td>&quot;&quot;</td>
+<td>Comma-separated list of HTTP headers to use when accessing the url provided to &ndash;manifest-url. Multiple headers with the same name will be added in the same order provided. This flag can be repeatedly invoked. For example: <code>--manifest-url-header 'a:hello,b:again,c:world' --manifest-url-header 'b:beautiful'</code></td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>Address</td>
+<td>&ndash;address</td>
+<td>0.0.0.0</td>
+<td>The IP address for the Kubelet to serve on (set to <code>0.0.0.0</code> for all IPv4 interfaces and <code>::</code> for all IPv6 interfaces)</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>Port</td>
+<td>&ndash;port</td>
+<td>10250</td>
+<td>The port for the Kubelet to serve on.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>ReadOnlyPort</td>
+<td>&ndash;read-only-port</td>
+<td>0</td>
+<td>The read-only port for the Kubelet to serve on with no authentication/authorization (set to 0 to disable)</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>Authentication.Anonymous.Enabled</td>
+<td>&ndash;anonymous-auth</td>
+<td>true</td>
+<td>Enables anonymous requests to the Kubelet server. Requests that are not rejected by another authentication method are treated as anonymous requests. Anonymous requests have a username of system:anonymous, and a group name of system:unauthenticated.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>Authentication.Webhook.Enabled</td>
+<td>&ndash;authentication-token-webhook</td>
+<td>false</td>
+<td>Use the TokenReview API to determine authentication for bearer tokens.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>Authentication.Webhook.CacheTTL.Duration</td>
+<td>&ndash;authentication-token-webhook-cache-ttl</td>
+<td>2 * time.Minute</td>
+<td>The duration to cache responses from the webhook token authenticator.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>Authentication.X509.ClientCAFile</td>
+<td>&ndash;client-ca-file</td>
+<td>&quot;&quot;</td>
+<td>If set, any request presenting a client certificate signed by one of the authorities in the client-ca-file is authenticated with an identity corresponding to the CommonName of the client certificate.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>Authorization.Mode</td>
+<td>&ndash;authorization-mode</td>
+<td>AlwaysAllow</td>
+<td>Authorization mode for Kubelet server. Valid options are AlwaysAllow or Webhook. Webhook mode uses the SubjectAccessReview API to determine authorization.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>Authorization.Webhook.CacheAuthorizedTTL.Duration</td>
+<td>&ndash;authorization-webhook-cache-authorized-ttl</td>
+<td>5 * time.Minute</td>
+<td>The duration to cache &lsquo;authorized&rsquo; responses from the webhook authorizer.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>Authorization.Webhook.CacheUnauthorizedTTL.Duration</td>
+<td>&ndash;authorization-webhook-cache-unauthorized-ttl</td>
+<td>30 * time.Second</td>
+<td>The duration to cache &lsquo;unauthorized&rsquo; responses from the webhook authorizer.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>TLSCertFile</td>
+<td>&ndash;tls-cert-file</td>
+<td>&quot;&quot;</td>
+<td>File containing x509 Certificate used for serving HTTPS (with intermediate certs, if any, concatenated after server cert). If &ndash;tls-cert-file and &ndash;tls-private-key-file are not provided, a self-signed certificate and key are generated for the public address and saved to the directory passed to &ndash;cert-dir.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>TLSPrivateKeyFile</td>
+<td>&ndash;tls-private-key-file</td>
+<td>&quot;&quot;</td>
+<td>File containing x509 private key matching &ndash;tls-cert-file.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>ServerTLSBootstrap</td>
+<td>&ndash;rotate-server-certificates</td>
+<td>false</td>
+<td>Auto-request and rotate the kubelet serving certificates by requesting new certificates from the kube-apiserver when the certificate expiration approaches. Requires the RotateKubeletServerCertificate feature gate to be enabled, and approval of the submitted CertificateSigningRequest objects.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>TLSCipherSuites</td>
+<td>&ndash;tls-cipher-suites</td>
+<td>&quot;&quot;</td>
+<td>Comma-separated list of cipher suites for the server. If omitted, the default Go cipher suites will be used. <br/>                Preferred values: TLS_AES_128_GCM_SHA256, TLS_AES_256_GCM_SHA384, TLS_CHACHA20_POLY1305_SHA256, TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305, TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256, TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305, TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256, TLS_RSA_WITH_3DES_EDE_CBC_SHA, TLS_RSA_WITH_AES_128_CBC_SHA, TLS_RSA_WITH_AES_128_GCM_SHA256, TLS_RSA_WITH_AES_256_CBC_SHA, TLS_RSA_WITH_AES_256_GCM_SHA384. <br/>                Insecure values: TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, TLS_ECDHE_RSA_WITH_RC4_128_SHA, TLS_RSA_WITH_AES_128_CBC_SHA256, TLS_RSA_WITH_RC4_128_SHA.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>TLSMinVersion</td>
+<td>&ndash;tls-min-version</td>
+<td>&quot;&quot;</td>
+<td>Minimum TLS version supported. Possible values: VersionTLS10, VersionTLS11, VersionTLS12, VersionTLS13</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>RotateCertificates</td>
+<td>&ndash;rotate-certificates</td>
+<td>false</td>
+<td>&lt;Warning: Beta feature&gt; Auto rotate the kubelet client certificates by requesting new certificates from the kube-apiserver when the certificate expiration approaches.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>RegistryPullQPS</td>
+<td>&ndash;registry-qps</td>
+<td>5</td>
+<td>If &gt; 0, limit registry pull QPS to this value. If 0, unlimited.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>RegistryBurst</td>
+<td>&ndash;registry-burst</td>
+<td>10</td>
+<td>Maximum size of a bursty pulls, temporarily allows pulls to burst to this number, while still not exceeding registry-qps. Only used if &ndash;registry-qps &gt; 0</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>EventRecordQPS</td>
+<td>&ndash;event-qps</td>
+<td>5</td>
+<td>If &gt; 0, limit event creations per second to this value. If 0, unlimited.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>EventBurst</td>
+<td>&ndash;event-burst</td>
+<td>10</td>
+<td>Maximum size of a bursty event records, temporarily allows event records to burst to this number, while still not exceeding event-qps. Only used if &ndash;event-qps &gt; 0</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>EnableDebuggingHandlers</td>
+<td>&ndash;enable-debugging-handlers</td>
+<td>true</td>
+<td>Enables server endpoints for log collection and local running of containers and commands</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>EnableContentionProfiling</td>
+<td>&ndash;contention-profiling</td>
+<td>false</td>
+<td>Enable lock contention profiling, if profiling is enabled</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>HealthzPort</td>
+<td>&ndash;healthz-port</td>
+<td>10248</td>
+<td>The port of the localhost healthz endpoint (set to 0 to disable)</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>HealthzBindAddress</td>
+<td>&ndash;healthz-bind-address</td>
+<td>127.0.0.1</td>
+<td>The IP address for the healthz server to serve on (set to <code>0.0.0.0</code> for all IPv4 interfaces and <code>::</code> for all IPv6 interfaces)</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>OOMScoreAdj</td>
+<td>&ndash;oom-score-adj</td>
+<td>-999</td>
+<td>The oom-score-adj value for kubelet process. Values must be within the range [-1000, 1000]</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>ClusterDomain</td>
+<td>&ndash;cluster-domain</td>
+<td>&quot;&quot;</td>
+<td>Domain for this cluster. If set, kubelet will configure all containers to search this domain in addition to the host&rsquo;s search domains</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>ClusterDNS</td>
+<td>&ndash;cluster-dns</td>
+<td>&quot;&quot;</td>
+<td>Comma-separated list of DNS server IP address. This value is used for containers DNS server in case of Pods with &quot;dnsPolicy=ClusterFirst&quot;. Note: all DNS servers appearing in the list MUST serve the same set of records otherwise name resolution within the cluster may not work correctly. There is no guarantee as to which DNS server may be contacted for name resolution.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>StreamingConnectionIdleTimeout.Duration</td>
+<td>&ndash;streaming-connection-idle-timeout</td>
+<td>4 * time.Hour</td>
+<td>Maximum time a streaming connection can be idle before the connection is automatically closed. 0 indicates no timeout. Example: &lsquo;5m&rsquo;</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>NodeStatusUpdateFrequency.Duration</td>
+<td>&ndash;node-status-update-frequency</td>
+<td>10 * time.Second</td>
+<td>Specifies how often kubelet posts node status to master. Note: be cautious when changing the constant, it must work with nodeMonitorGracePeriod in nodecontroller.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>ImageMinimumGCAge.Duration</td>
+<td>&ndash;minimum-image-ttl-duration</td>
+<td>2 * time.Minute</td>
+<td>Minimum age for an unused image before it is garbage collected. Examples: &lsquo;300ms&rsquo;, &rsquo;10s' or &lsquo;2h45m&rsquo;.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>ImageGCHighThresholdPercent</td>
+<td>&ndash;image-gc-high-threshold</td>
+<td>85</td>
+<td>The percent of disk usage after which image garbage collection is always run. Values must be within the range [0, 100], To disable image garbage collection, set to 100.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>ImageGCLowThresholdPercent</td>
+<td>&ndash;image-gc-low-threshold</td>
+<td>80</td>
+<td>The percent of disk usage before which image garbage collection is never run. Lowest disk usage to garbage collect to. Values must be within the range [0, 100] and should not be larger than that of &ndash;image-gc-high-threshold.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>VolumeStatsAggPeriod.Duration</td>
+<td>&ndash;volume-stats-agg-period</td>
+<td>1 * time.Minute</td>
+<td>pecifies interval for kubelet to calculate and cache the volume disk usage for all pods and volumes. To disable volume calculations, set to 0.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>FeatureGates</td>
+<td>&ndash;feature-gates</td>
+<td>&quot;&quot;</td>
+<td>A set of key=value pairs that describe feature gates for alpha/experimental features.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>KubeletCgroups</td>
+<td>&ndash;kubelet-cgroups</td>
+<td>&quot;&quot;</td>
+<td>Optional absolute name of cgroups to create and run the Kubelet in.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>SystemCgroups</td>
+<td>&ndash;system-cgroups</td>
+<td>&quot;&quot;</td>
+<td>Optional absolute name of cgroups in which to place all non-kernel processes that are not already inside a cgroup under <code>/</code>. Empty for no container. Rolling back the flag requires a reboot.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>CgroupsPerQOS</td>
+<td>&ndash;cgroups-per-qos</td>
+<td>true</td>
+<td>Enable creation of QoS cgroup hierarchy, if true top level QoS and pod cgroups are created.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>CgroupDriver</td>
+<td>&ndash;cgroup-driver</td>
+<td>cgroupfs</td>
+<td>Driver that the kubelet uses to manipulate cgroups on the host. Possible values: &lsquo;cgroupfs&rsquo;, &lsquo;systemd&rsquo;</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>CgroupRoot</td>
+<td>&ndash;cgroup-root</td>
+<td>&quot;&quot;</td>
+<td>Optional root cgroup to use for pods. This is handled by the container runtime on a best effort basis. Default: &lsquo;&rsquo;, which means use the container runtime default.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>CPUManagerPolicy</td>
+<td>&ndash;cpu-manager-policy</td>
+<td>none</td>
+<td>CPU Manager policy to use. Possible values: &lsquo;none&rsquo;, &lsquo;static&rsquo;. Default: &lsquo;none&rsquo;</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>CPUManagerReconcilePeriod.Duration</td>
+<td>&ndash;cpu-manager-reconcile-period</td>
+<td>10 * time.Second</td>
+<td>&lt;Warning: Alpha feature&gt; CPU Manager reconciliation period. Examples: &rsquo;10s', or &lsquo;1m&rsquo;. If not supplied, defaults to <code>NodeStatusUpdateFrequency</code></td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>QOSReserved</td>
+<td>&ndash;qos-reserved</td>
+<td>&quot;&quot;</td>
+<td>&lt;Warning: Alpha feature&gt; A set of ResourceName=Percentage (e.g. memory=50%) pairs that describe how pod resource requests are reserved at the QoS level. Currently only memory is supported. Requires the QOSReserved feature gate to be enabled.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>TopologyManagerPolicy</td>
+<td>&ndash;topology-manager-policy</td>
+<td>&ldquo;none&rdquo;</td>
+<td>Topology Manager policy to use. Possible values: &lsquo;none&rsquo;, &lsquo;best-effort&rsquo;, &lsquo;restricted&rsquo;, &lsquo;single-numa-node&rsquo;.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>RuntimeRequestTimeout.Duration</td>
+<td>&ndash;runtime-request-timeout</td>
+<td>2 * time.Minute</td>
+<td>Timeout of all runtime requests except long running request - pull, logs, exec and attach. When timeout exceeded, kubelet will cancel the request, throw out an error and retry later.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>HairpinMode</td>
+<td>&ndash;hairpin-mode</td>
+<td>promiscuous-bridge</td>
+<td>How should the kubelet setup hairpin NAT. This allows endpoints of a Service to loadbalance back to themselves if they should try to access their own Service. Valid values are &quot;promiscuous-bridge&quot;, &quot;hairpin-veth&quot; and &quot;none&quot;.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>MaxPods</td>
+<td>&ndash;max-pods</td>
+<td>110</td>
+<td>Number of Pods that can run on this Kubelet.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>PodCIDR</td>
+<td>&ndash;pod-cidr</td>
+<td>&quot;&quot;</td>
+<td>The CIDR to use for pod IP addresses, only used in standalone mode. In cluster mode, this is obtained from the master. For IPv6, the maximum number of IP&rsquo;s allocated is 65536</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>PodPidsLimit</td>
+<td>&ndash;pod-max-pids</td>
+<td>-1</td>
+<td>Set the maximum number of processes per pod. If -1, the kubelet defaults to the node allocatable pid capacity.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>ResolverConfig</td>
+<td>&ndash;resolv-conf</td>
+<td>/etc/resolv.conf</td>
+<td>Resolver configuration file used as the basis for the container DNS resolution configuration.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>CPUCFSQuota</td>
+<td>&ndash;cpu-cfs-quota</td>
+<td>true</td>
+<td>Enable CPU CFS quota enforcement for containers that specify CPU limits</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>CPUCFSQuotaPeriod</td>
+<td>&ndash;cpu-cfs-quota-period</td>
+<td>100 * time.Millisecond</td>
+<td>Sets CPU CFS quota period value, cpu.cfs_period_us, defaults to Linux Kernel default</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>EnableControllerAttachDetach</td>
+<td>&ndash;enable-controller-attach-detach</td>
+<td>true</td>
+<td>Enables the Attach/Detach controller to manage attachment/detachment of volumes scheduled to this node, and disables kubelet from executing any attach/detach operations</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>MakeIPTablesUtilChains</td>
+<td>&ndash;make-iptables-util-chains</td>
+<td>true</td>
+<td>If true, kubelet will ensure iptables utility rules are present on host.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>IPTablesMasqueradeBit</td>
+<td>&ndash;iptables-masquerade-bit</td>
+<td>14</td>
+<td>The bit of the fwmark space to mark packets for SNAT. Must be within the range [0, 31]. Please match this parameter with corresponding parameter in kube-proxy.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>IPTablesDropBit</td>
+<td>&ndash;iptables-drop-bit</td>
+<td>15</td>
+<td>The bit of the fwmark space to mark packets for dropping. Must be within the range [0, 31].</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>ContainerLogMaxSize</td>
+<td>&ndash;container-log-max-size</td>
+<td>10Mi</td>
+<td>&lt;Warning: Beta feature&gt; Set the maximum size (e.g. 10Mi) of container log file before it is rotated. This flag can only be used with &ndash;container-runtime=remote.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>ContainerLogMaxFiles</td>
+<td>&ndash;container-log-max-files</td>
+<td>5</td>
+<td>&lt;Warning: Beta feature&gt; Set the maximum number of container log files that can be present for a container. The number must be &gt;= 2. This flag can only be used with &ndash;container-runtime=remote.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>AllowedUnsafeSysctls</td>
+<td>&ndash;allowed-unsafe-sysctls</td>
+<td>&quot;&quot;</td>
+<td>Comma-separated whitelist of unsafe sysctls or unsafe sysctl patterns (ending in *). Use these at your own risk.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>MaxOpenFiles</td>
+<td>&ndash;max-open-files</td>
+<td>1000000</td>
+<td>Number of files that can be opened by Kubelet process.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>ContentType</td>
+<td>&ndash;kube-api-content-type</td>
+<td>application/vnd.kubernetes.protobuf</td>
+<td>Content type of requests sent to apiserver.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>KubeAPIQPS</td>
+<td>&ndash;kube-api-qps</td>
+<td>5</td>
+<td>QPS to use while talking with kubernetes apiserver</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>KubeAPIBurst</td>
+<td>&ndash;kube-api-burst</td>
+<td>10</td>
+<td>Burst to use while talking with kubernetes apiserver</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>SerializeImagePulls</td>
+<td>&ndash;serialize-image-pulls</td>
+<td>true</td>
+<td>Pull images one at a time. We recommend <em>not</em> changing the default value on nodes that run docker daemon with version &lt; 1.9 or an Aufs storage backend. Issue #10959 has more details.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>EvictionHard</td>
+<td>&ndash;eviction-hard</td>
+<td>memory.available&lt;100Mi,nodefs.available&lt;10%,nodefs.inodesFree&lt;5%,imagefs.available&lt;15%</td>
+<td>A set of eviction thresholds (e.g. memory.available&lt;1Gi) that if met would trigger a pod eviction.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>EvictionSoft</td>
+<td>&ndash;eviction-soft</td>
+<td>&quot;&quot;</td>
+<td>A set of eviction thresholds (e.g. memory.available&lt;1.5Gi) that if met over a corresponding grace period would trigger a pod eviction.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>EvictionSoftGracePeriod</td>
+<td>&ndash;eviction-soft-grace-period</td>
+<td>&quot;&quot;</td>
+<td>A set of eviction grace periods (e.g. memory.available=1m30s) that correspond to how long a soft eviction threshold must hold before triggering a pod eviction.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>EvictionPressureTransitionPeriod.Duration</td>
+<td>&ndash;eviction-pressure-transition-period</td>
+<td>5 * time.Minute</td>
+<td>Duration for which the kubelet has to wait before transitioning out of an eviction pressure condition.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>EvictionMaxPodGracePeriod</td>
+<td>&ndash;eviction-max-pod-grace-period</td>
+<td>0</td>
+<td>Maximum allowed grace period (in seconds) to use when terminating pods in response to a soft eviction threshold being met. If negative, defer to pod specified value.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>EvictionMinimumReclaim</td>
+<td>&ndash;eviction-minimum-reclaim</td>
+<td>0</td>
+<td>A set of minimum reclaims (e.g. imagefs.available=2Gi) that describes the minimum amount of resource the kubelet will reclaim when performing a pod eviction if that resource is under pressure.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>PodsPerCore</td>
+<td>&ndash;pods-per-core</td>
+<td>0</td>
+<td>Number of Pods per core that can run on this Kubelet. The total number of Pods on this Kubelet cannot exceed max-pods, so max-pods will be used if this calculation results in a larger number of Pods allowed on the Kubelet. A value of 0 disables this limit.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>ProtectKernelDefaults</td>
+<td>&ndash;protect-kernel-defaults</td>
+<td>false</td>
+<td>Default kubelet behaviour for kernel tuning. If set, kubelet errors if any of kernel tunables is different than kubelet defaults.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>ReservedSystemCPUs</td>
+<td>&ndash;reserved-cpus</td>
+<td>&quot;&quot;</td>
+<td>A comma-separated list of CPUs or CPU ranges that are reserved for system and kubernetes usage. This specific list will supersede cpu counts in &ndash;system-reserved and &ndash;kube-reserved.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>SystemReserved</td>
+<td>&ndash;system-reserved</td>
+<td>&quot;&quot;</td>
+<td>A set of ResourceName=ResourceQuantity (e.g. cpu=200m,memory=500Mi,ephemeral-storage=1Gi) pairs that describe resources reserved for non-kubernetes components. Currently only cpu and memory are supported. See <a href="http://kubernetes.io/docs/user-guide/compute-resources">http://kubernetes.io/docs/user-guide/compute-resources</a> for more detail. [default=none]</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>KubeReserved</td>
+<td>&ndash;kube-reserved</td>
+<td>&quot;&quot;</td>
+<td>A set of ResourceName=ResourceQuantity (e.g. cpu=200m,memory=500Mi,ephemeral-storage=1Gi) pairs that describe resources reserved for kubernetes system components. Currently cpu, memory and local ephemeral storage for root file system are supported. See <a href="http://kubernetes.io/docs/user-guide/compute-resources">http://kubernetes.io/docs/user-guide/compute-resources</a> for more detail. [default=none]</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>EnforceNodeAllocatable</td>
+<td>&ndash;enforce-node-allocatable</td>
+<td>pods</td>
+<td>A comma separated list of levels of node allocatable enforcement to be enforced by kubelet. Acceptable options are &lsquo;none&rsquo;, &lsquo;pods&rsquo;, &lsquo;system-reserved&rsquo;, and &lsquo;kube-reserved&rsquo;. If the latter two options are specified, &lsquo;&ndash;system-reserved-cgroup&rsquo; and &lsquo;&ndash;kube-reserved-cgroup&rsquo; must also be set, respectively. If &lsquo;none&rsquo; is specified, no additional options should be set. See <a href="https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/">https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/</a> for more details.</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>SystemReservedCgroup</td>
+<td>&ndash;system-reserved-cgroup</td>
+<td>&quot;&quot;</td>
+<td>Absolute name of the top level cgroup that is used to manage non-kubernetes components for which compute resources were reserved via &lsquo;&ndash;system-reserved&rsquo; flag. Ex. &lsquo;/system-reserved&rsquo;. [default='']</td>
+</tr>
+<tr>
+<td>deprecated command line</td>
+<td>KubeReservedCgroup</td>
+<td>&ndash;kube-reserved-cgroup</td>
+<td>&quot;&quot;</td>
+<td>Absolute name of the top level cgroup that is used to manage kubernetes components for which compute resources were reserved via &lsquo;&ndash;kube-reserved&rsquo; flag. Ex. &lsquo;/kube-reserved&rsquo;. [default='']</td>
+</tr>
+<tr>
+<td>configuration</td>
+<td>NodeStatusReportFrequency</td>
+<td></td>
+<td>5 * time.Minute</td>
+<td>The frequency that kubelet posts node status to master if node status does not change. Kubelet will ignore this frequency and post node status immediately if any change is detected. It is only used when node lease feature is enabled. nodeStatusReportFrequency&rsquo;s default value is 1m. But if nodeStatusUpdateFrequency is set explicitly, nodeStatusReportFrequency&rsquo;s default value will be set to nodeStatusUpdateFrequency for backward compatibility.</td>
+</tr>
+<tr>
+<td>configuration</td>
+<td>NodeLeaseDurationSeconds</td>
+<td></td>
+<td>40 * time.Second</td>
+<td>The duration the Kubelet will set on its corresponding Lease, when the NodeLease feature is enabled. This feature provides an indicator of node health by having the Kubelet create and periodically renew a lease, named after the node, in the kube-node-lease namespace. If the lease expires, the node can be considered unhealthy. The lease is currently renewed every 10s, per KEP-0009. In the future, the lease renewal interval may be set based on the lease duration. Requires the NodeLease feature gate to be enabled.</td>
+</tr>
+<tr>
+<td>configuration</td>
+<td>ConfigMapAndSecretChangeDetectionStrategy</td>
+<td></td>
+<td>Watch</td>
+<td>A mode in which config map and secret managers are running.</td>
+</tr>
+<tr>
+<td>configuration</td>
+<td>ShowHiddenMetricsForVersion</td>
+<td></td>
+<td>&quot;&quot;</td>
+<td>The previous version for which you want to show hidden metrics. Only the previous minor version is meaningful, other values will not be allowed. The format is <major>.<minor>, e.g.: &lsquo;1.16&rsquo;. The purpose of this format is make sure you have the opportunity to notice if the next release hides additional metrics, rather than being surprised when they are permanently removed in the release after that.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="globalflags">GlobalFlags</h3>
+<p>globalFlags包含了klog选项、cadvisor选项、CredentialProvider选项、logflush选项。</p>
+<p>klog选项定义通过klog.InitFlags</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// InitFlags is for explicitly initializing the flags.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">InitFlags</span><span class="p">(</span><span class="nx">flagset</span> <span class="o">*</span><span class="nx">flag</span><span class="p">.</span><span class="nx">FlagSet</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">flagset</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">flagset</span> <span class="p">=</span> <span class="nx">flag</span><span class="p">.</span><span class="nx">CommandLine</span>
+	<span class="p">}</span>
+
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">StringVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">logDir</span><span class="p">,</span> <span class="s">&#34;log_dir&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">logDir</span><span class="p">,</span> <span class="s">&#34;If non-empty, write log files in this directory&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">StringVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">logFile</span><span class="p">,</span> <span class="s">&#34;log_file&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">logFile</span><span class="p">,</span> <span class="s">&#34;If non-empty, use this log file&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">Uint64Var</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">logFileMaxSizeMB</span><span class="p">,</span> <span class="s">&#34;log_file_max_size&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">logFileMaxSizeMB</span><span class="p">,</span>
+		<span class="s">&#34;Defines the maximum size a log file can grow to. Unit is megabytes. &#34;</span><span class="o">+</span>
+			<span class="s">&#34;If the value is 0, the maximum file size is unlimited.&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">BoolVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">toStderr</span><span class="p">,</span> <span class="s">&#34;logtostderr&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">toStderr</span><span class="p">,</span> <span class="s">&#34;log to standard error instead of files&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">BoolVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">alsoToStderr</span><span class="p">,</span> <span class="s">&#34;alsologtostderr&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">alsoToStderr</span><span class="p">,</span> <span class="s">&#34;log to standard error as well as files&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">Var</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">verbosity</span><span class="p">,</span> <span class="s">&#34;v&#34;</span><span class="p">,</span> <span class="s">&#34;number for the log level verbosity&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">BoolVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">skipHeaders</span><span class="p">,</span> <span class="s">&#34;add_dir_header&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">addDirHeader</span><span class="p">,</span> <span class="s">&#34;If true, adds the file directory to the header&#34;</span><span class="p">)</span> <span class="c1">//这里应该是&amp;logging.addDirHeader,在下一个klog版本v2.0.0修复了,所有的1.18版本都会有这个问题
+</span><span class="c1"></span>	<span class="nx">flagset</span><span class="p">.</span><span class="nf">BoolVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">skipHeaders</span><span class="p">,</span> <span class="s">&#34;skip_headers&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">skipHeaders</span><span class="p">,</span> <span class="s">&#34;If true, avoid header prefixes in the log messages&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">BoolVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">skipLogHeaders</span><span class="p">,</span> <span class="s">&#34;skip_log_headers&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">skipLogHeaders</span><span class="p">,</span> <span class="s">&#34;If true, avoid headers when opening log files&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">Var</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">stderrThreshold</span><span class="p">,</span> <span class="s">&#34;stderrthreshold&#34;</span><span class="p">,</span> <span class="s">&#34;logs at or above this threshold go to stderr&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">Var</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">vmodule</span><span class="p">,</span> <span class="s">&#34;vmodule&#34;</span><span class="p">,</span> <span class="s">&#34;comma-separated list of pattern=N settings for file-filtered logging&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">Var</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">traceLocation</span><span class="p">,</span> <span class="s">&#34;log_backtrace_at&#34;</span><span class="p">,</span> <span class="s">&#34;when logging hits line file:N, emit a stack trace&#34;</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><strong>cadvisor定义过程</strong></p>
+<p>cadvisor flag通过匿名import来导入的，代码保存在vendor/github.com/google/cadvisor下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// ensure libs have a chance to globally register their flags
+</span><span class="c1"></span>	<span class="nx">_</span> <span class="s">&#34;github.com/google/cadvisor/container/common&#34;</span>
+	<span class="nx">_</span> <span class="s">&#34;github.com/google/cadvisor/container/containerd&#34;</span>
+	<span class="nx">_</span> <span class="s">&#34;github.com/google/cadvisor/container/docker&#34;</span>
+	<span class="nx">_</span> <span class="s">&#34;github.com/google/cadvisor/container/raw&#34;</span>
+	<span class="nx">_</span> <span class="s">&#34;github.com/google/cadvisor/machine&#34;</span>
+	<span class="nx">_</span> <span class="s">&#34;github.com/google/cadvisor/manager&#34;</span>
+	<span class="nx">_</span> <span class="s">&#34;github.com/google/cadvisor/storage&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>以<code>github.com/google/cadvisor/container/docker</code>为例，它定义了下面这些选项</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="nx">ArgDockerEndpoint</span> <span class="p">=</span> <span class="nx">flag</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;docker&#34;</span><span class="p">,</span> <span class="s">&#34;unix:///var/run/docker.sock&#34;</span><span class="p">,</span> <span class="s">&#34;docker endpoint&#34;</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">ArgDockerTLS</span> <span class="p">=</span> <span class="nx">flag</span><span class="p">.</span><span class="nf">Bool</span><span class="p">(</span><span class="s">&#34;docker-tls&#34;</span><span class="p">,</span> <span class="kc">false</span><span class="p">,</span> <span class="s">&#34;use TLS to connect to docker&#34;</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">ArgDockerCert</span> <span class="p">=</span> <span class="nx">flag</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;docker-tls-cert&#34;</span><span class="p">,</span> <span class="s">&#34;cert.pem&#34;</span><span class="p">,</span> <span class="s">&#34;path to client certificate&#34;</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">ArgDockerKey</span> <span class="p">=</span> <span class="nx">flag</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;docker-tls-key&#34;</span><span class="p">,</span> <span class="s">&#34;key.pem&#34;</span><span class="p">,</span> <span class="s">&#34;path to private key&#34;</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">ArgDockerCA</span> <span class="p">=</span> <span class="nx">flag</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;docker-tls-ca&#34;</span><span class="p">,</span> <span class="s">&#34;ca.pem&#34;</span><span class="p">,</span> <span class="s">&#34;path to trusted CA&#34;</span><span class="p">)</span>
+
+<span class="c1">// The namespace under which Docker aliases are unique.
+</span><span class="c1"></span><span class="kd">const</span> <span class="nx">DockerNamespace</span> <span class="p">=</span> <span class="s">&#34;docker&#34;</span>
+
+<span class="c1">// Regexp that identifies docker cgroups, containers started with
+</span><span class="c1">// --cgroup-parent have another prefix than &#39;docker&#39;
+</span><span class="c1"></span><span class="kd">var</span> <span class="nx">dockerCgroupRegexp</span> <span class="p">=</span> <span class="nx">regexp</span><span class="p">.</span><span class="nf">MustCompile</span><span class="p">(</span><span class="s">`([a-z0-9]{64})`</span><span class="p">)</span>
+
+<span class="kd">var</span> <span class="nx">dockerEnvWhitelist</span> <span class="p">=</span> <span class="nx">flag</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;docker_env_metadata_whitelist&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;a comma-separated list of environment variable keys that needs to be collected for docker containers&#34;</span><span class="p">)</span>
+
+<span class="kd">var</span> <span class="p">(</span>
+	<span class="c1">// Basepath to all container specific information that libcontainer stores.
+</span><span class="c1"></span>	<span class="nx">dockerRootDir</span> <span class="kt">string</span>
+
+	<span class="nx">dockerRootDirFlag</span> <span class="p">=</span> <span class="nx">flag</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;docker_root&#34;</span><span class="p">,</span> <span class="s">&#34;/var/lib/docker&#34;</span><span class="p">,</span> <span class="s">&#34;DEPRECATED: docker root is read from docker info (this is a fallback, default: /var/lib/docker)&#34;</span><span class="p">)</span>
+
+	<span class="nx">dockerRootDirOnce</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Once</span>
+
+	<span class="c1">// flag that controls globally disabling thin_ls pending future enhancements.
+</span><span class="c1"></span>	<span class="c1">// in production, it has been found that thin_ls makes excessive use of iops.
+</span><span class="c1"></span>	<span class="c1">// in an iops restricted environment, usage of thin_ls must be controlled via blkio.
+</span><span class="c1"></span>	<span class="c1">// pending that enhancement, disable its usage.
+</span><span class="c1"></span>	<span class="nx">disableThinLs</span> <span class="p">=</span> <span class="kc">true</span>
+<span class="p">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>cadvisor选项中除了<code>--docker-root</code>和<code>housekeeping-interval</code>不是deprecated，其他选项都是deprecated。其中<code>update_machine_info_interval</code>这个flag未注册到kubelet中，根据commit记录，<code>update_machine_info_interval</code>是在升级cadvisor版本到0.33.0时候新添加进来的，可能因为这些都是deprecated，所以没有注册到kubelet中。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// These flags were also implicit from cadvisor, but are actually used by something in the core repo:
+</span><span class="c1"></span>	<span class="c1">// TODO(mtaufen): This one is stil used by our salt, but for heaven&#39;s sake it&#39;s even deprecated in cadvisor
+</span><span class="c1"></span>	<span class="nf">register</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;docker_root&#34;</span><span class="p">)</span>
+	<span class="c1">// e2e node tests rely on this
+</span><span class="c1"></span>	<span class="nf">register</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;housekeeping_interval&#34;</span><span class="p">)</span>
+
+	<span class="c1">// These flags were implicit from cadvisor, and are mistakes that should be registered deprecated:
+</span><span class="c1"></span>	<span class="kd">const</span> <span class="nx">deprecated</span> <span class="p">=</span> <span class="s">&#34;This is a cadvisor flag that was mistakenly registered with the Kubelet. Due to legacy concerns, it will follow the standard CLI deprecation timeline before being removed.&#34;</span>
+
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;application_metrics_count_limit&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;boot_id_file&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;container_hints&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;containerd&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;docker&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;docker_env_metadata_whitelist&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;docker_only&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;docker-tls&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;docker-tls-ca&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;docker-tls-cert&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;docker-tls-key&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;enable_load_reader&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;event_storage_age_limit&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;event_storage_event_limit&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;global_housekeeping_interval&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;log_cadvisor_usage&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;machine_id_file&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;storage_driver_user&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;storage_driver_password&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;storage_driver_host&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;storage_driver_db&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;storage_driver_table&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;storage_driver_secure&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+	<span class="nf">registerDeprecated</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span> <span class="nx">local</span><span class="p">,</span> <span class="s">&#34;storage_driver_buffer_duration&#34;</span><span class="p">,</span> <span class="nx">deprecated</span><span class="p">)</span>
+
+</code></pre></td></tr></table>
+</div>
+</div><p><strong>CredentialProviderFlags</strong></p>
+<p>在cmd\kubelet\app\options\globalflags.go里匿名import</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go">	<span class="c1">// ensure libs have a chance to globally register their flags
+</span><span class="c1"></span>	<span class="nx">_</span> <span class="s">&#34;k8s.io/kubernetes/pkg/credentialprovider/azure&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在pkg\credentialprovider\azure\azure_credentials.go定义</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="nx">flagConfigFile</span> <span class="p">=</span> <span class="nx">pflag</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;azure-container-registry-config&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span>
+	<span class="s">&#34;Path to the file containing Azure container registry configuration information.&#34;</span><span class="p">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><strong>version</strong></p>
+<p><code>--version</code>选项定义在staging\src\k8s.io\component-base\version\verflag\verflag.go，它接受三个值false (默认值)、true(不加参数默认为true)、raw(显示json格式的详细版本信息)。</p>
+<p>后面文章专门介绍kubernetes的版本相关的发布规则、version的相关hack技术</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">VersionVar</span><span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">versionValue</span><span class="p">,</span> <span class="nx">name</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">value</span> <span class="nx">versionValue</span><span class="p">,</span> <span class="nx">usage</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+	<span class="o">*</span><span class="nx">p</span> <span class="p">=</span> <span class="nx">value</span>
+	<span class="nx">flag</span><span class="p">.</span><span class="nf">Var</span><span class="p">(</span><span class="nx">p</span><span class="p">,</span> <span class="nx">name</span><span class="p">,</span> <span class="nx">usage</span><span class="p">)</span>
+	<span class="c1">// &#34;--version&#34; will be treated as &#34;--version=true&#34;
+</span><span class="c1"></span>	<span class="nx">flag</span><span class="p">.</span><span class="nf">Lookup</span><span class="p">(</span><span class="nx">name</span><span class="p">).</span><span class="nx">NoOptDefVal</span> <span class="p">=</span> <span class="s">&#34;true&#34;</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">Version</span><span class="p">(</span><span class="nx">name</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">value</span> <span class="nx">versionValue</span><span class="p">,</span> <span class="nx">usage</span> <span class="kt">string</span><span class="p">)</span> <span class="o">*</span><span class="nx">versionValue</span> <span class="p">{</span>
+	<span class="nx">p</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">versionValue</span><span class="p">)</span>
+	<span class="nf">VersionVar</span><span class="p">(</span><span class="nx">p</span><span class="p">,</span> <span class="nx">name</span><span class="p">,</span> <span class="nx">value</span><span class="p">,</span> <span class="nx">usage</span><span class="p">)</span>
+	<span class="k">return</span> <span class="nx">p</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">versionFlagName</span> <span class="p">=</span> <span class="s">&#34;version&#34;</span>
+
+<span class="kd">var</span> <span class="p">(</span>
+	<span class="nx">versionFlag</span> <span class="p">=</span> <span class="nf">Version</span><span class="p">(</span><span class="nx">versionFlagName</span><span class="p">,</span> <span class="nx">VersionFalse</span><span class="p">,</span> <span class="s">&#34;Print version information and quit&#34;</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><strong>log选项</strong></p>
+<p>定义在staging\src\k8s.io\component-base\logs\logs.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">const</span> <span class="nx">logFlushFreqFlagName</span> <span class="p">=</span> <span class="s">&#34;log-flush-frequency&#34;</span>
+
+<span class="kd">var</span> <span class="nx">logFlushFreq</span> <span class="p">=</span> <span class="nx">pflag</span><span class="p">.</span><span class="nf">Duration</span><span class="p">(</span><span class="nx">logFlushFreqFlagName</span><span class="p">,</span> <span class="mi">5</span><span class="o">*</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">,</span> <span class="s">&#34;Maximum number of seconds between log flushes&#34;</span><span class="p">)</span>
+
+
+</code></pre></td></tr></table>
+</div>
+</div><table>
+<thead>
+<tr>
+<th>categories分类</th>
+<th>var变量</th>
+<th>flag</th>
+<th>default默认值</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>klog</td>
+<td>logDir</td>
+<td>&ndash;log-dir</td>
+<td>&quot;&quot;</td>
+<td>If non-empty, write log files in this directory</td>
+</tr>
+<tr>
+<td>klog</td>
+<td>logFile</td>
+<td>&ndash;log-file</td>
+<td>&quot;&quot;</td>
+<td>If non-empty, use this log file</td>
+</tr>
+<tr>
+<td>klog</td>
+<td>logFileMaxSizeMB</td>
+<td>&ndash;log-file-max-size</td>
+<td>1800</td>
+<td>Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited.</td>
+</tr>
+<tr>
+<td>klog</td>
+<td>toStderr</td>
+<td>&ndash;logtostderr</td>
+<td>true</td>
+<td>log to standard error instead of files</td>
+</tr>
+<tr>
+<td>klog</td>
+<td>alsoToStderr</td>
+<td>&ndash;alsologtostderr</td>
+<td>false</td>
+<td>log to standard error as well as files</td>
+</tr>
+<tr>
+<td>klog</td>
+<td>verbosity</td>
+<td>-v, &ndash;v</td>
+<td>0</td>
+<td>number for the log level verbosity</td>
+</tr>
+<tr>
+<td>klog</td>
+<td>addDirHeader</td>
+<td>&ndash;add-dir-header</td>
+<td>false</td>
+<td>If true, adds the file directory to the header</td>
+</tr>
+<tr>
+<td>klog</td>
+<td>skipHeaders</td>
+<td>&ndash;skip-headers</td>
+<td>false</td>
+<td>If true, avoid header prefixes in the log messages</td>
+</tr>
+<tr>
+<td>klog</td>
+<td>skipLogHeaders</td>
+<td>&ndash;skip-log-headers</td>
+<td>false</td>
+<td>If true, avoid headers when opening log files</td>
+</tr>
+<tr>
+<td>klog</td>
+<td>stderrThreshold</td>
+<td>&ndash;stderrthreshold</td>
+<td>2</td>
+<td>logs at or above this threshold go to stderr</td>
+</tr>
+<tr>
+<td>klog</td>
+<td>vmodule</td>
+<td>&ndash;vmodule</td>
+<td>&quot;&quot;</td>
+<td>comma-separated list of pattern=N settings for file-filtered logging</td>
+</tr>
+<tr>
+<td>klog</td>
+<td>traceLocation</td>
+<td>&ndash;log-backtrace-at</td>
+<td>&quot;&quot;</td>
+<td>when logging hits line file:N, emit a stack trace</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>dockerRootDirFlag</td>
+<td>&ndash;docker-root</td>
+<td>/var/lib/docker</td>
+<td>DEPRECATED: docker root is read from docker info (this is a fallback, default: /var/lib/docker)</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgDockerEndpoint</td>
+<td>&ndash;docker</td>
+<td>unix:///var/run/docker.sock</td>
+<td>docker endpoint</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgDockerTLS</td>
+<td>&ndash;docker-tls</td>
+<td>false</td>
+<td>use TLS to connect to docker</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgDockerCert</td>
+<td>&ndash;docker-tls-cert</td>
+<td>cert.pem</td>
+<td>path to client certificate</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgDockerKey</td>
+<td>&ndash;docker-tls-key</td>
+<td>key.pem</td>
+<td>path to private key</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgDockerCA</td>
+<td>&ndash;docker-tls-ca</td>
+<td>ca.pem</td>
+<td>path to trusted CA</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>dockerEnvWhitelist</td>
+<td>&ndash;docker-env-metadata-whitelist</td>
+<td>&quot;&quot;</td>
+<td>a comma-separated list of environment variable keys that needs to be collected for docker containers</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgContainerHints</td>
+<td>&ndash;container-hints</td>
+<td>/etc/cadvisor/container_hints.json</td>
+<td>location of the container hints file</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgContainerdEndpoint</td>
+<td>&ndash;containerd</td>
+<td>/run/containerd/containerd.sock</td>
+<td>containerd endpoint</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgContainerdNamespace</td>
+<td>&ndash;containerd-namespace</td>
+<td>k8s.io</td>
+<td>containerd namespace</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>dockerOnly</td>
+<td>&ndash;docker-only</td>
+<td>false</td>
+<td>Only report docker containers in addition to root stats</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>disableRootCgroupStats</td>
+<td>&ndash;disable-root-cgroup-stats</td>
+<td>false</td>
+<td>Disable collecting root Cgroup stats</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>machineIdFilePath</td>
+<td>&ndash;machine-id-file</td>
+<td>/etc/machine-id,/var/lib/dbus/machine-id</td>
+<td>Comma-separated list of files to check for machine-id. Use the first one that exists.</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>bootIdFilePath</td>
+<td>&ndash;boot-id-file</td>
+<td>/proc/sys/kernel/random/boot_id</td>
+<td>Comma-separated list of files to check for boot-id. Use the first one that exists.</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>enableLoadReader</td>
+<td>&ndash;enable-load-reader</td>
+<td>false</td>
+<td>Whether to enable cpu load reader</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>HousekeepingInterval</td>
+<td>&ndash;housekeeping-interval</td>
+<td>1 * time.Second</td>
+<td>Interval between container housekeepings</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>globalHousekeepingInterval</td>
+<td>&ndash;global-housekeeping-interval</td>
+<td>1 * time.Minute</td>
+<td>Interval between global housekeepings</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>logCadvisorUsage</td>
+<td>&ndash;log-cadvisor-usage</td>
+<td>false</td>
+<td>Whether to log the usage of the cAdvisor container</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>eventStorageAgeLimit</td>
+<td>&ndash;event-storage-age-limit</td>
+<td>default=24h</td>
+<td>Max length of time for which to store events (per type). Value is a comma separated list of key values, where the keys are event types (e.g.: creation, oom) or &quot;default&quot; and the value is a duration. Default is applied to all non-specified event types</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>eventStorageEventLimit</td>
+<td>&ndash;event-storage-event-limit</td>
+<td>default=100000</td>
+<td>Max number of events to store (per type). Value is a comma separated list of key values, where the keys are event types (e.g.: creation, oom) or &quot;default&quot; and the value is an integer. Default is applied to all non-specified event types</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>applicationMetricsCountLimit</td>
+<td>&ndash;application-metrics-count-limit</td>
+<td>100</td>
+<td>Max number of application metrics to store (per container)</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgDbUsername</td>
+<td>&ndash;storage-driver-user</td>
+<td>root</td>
+<td>database username</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgDbPassword</td>
+<td>&ndash;storage-driver-password</td>
+<td>root</td>
+<td>database password</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgDbHost</td>
+<td>&ndash;storage-driver-host</td>
+<td>localhost:8086</td>
+<td>database host:port</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgDbName</td>
+<td>&ndash;storage-driver-db</td>
+<td>cadvisor</td>
+<td>database name</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgDbTable</td>
+<td>&ndash;storage-driver-table</td>
+<td>stats</td>
+<td>table name</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgDbIsSecure</td>
+<td>&ndash;storage-driver-secure</td>
+<td>false</td>
+<td>use secure connection with database</td>
+</tr>
+<tr>
+<td>cadvisor</td>
+<td>ArgDbBufferDuration</td>
+<td>&ndash;storage-driver-buffer-duration</td>
+<td>60 * time.Second</td>
+<td>Writes in the storage driver will be buffered for this duration, and committed to the non memory backends as a single transaction</td>
+</tr>
+<tr>
+<td>CredentialProvider</td>
+<td>flagConfigFile</td>
+<td>&ndash;azure-container-registry-config</td>
+<td>&quot;&quot;</td>
+<td>Path to the file containing Azure container registry configuration information.</td>
+</tr>
+<tr>
+<td>version</td>
+<td>versionFlag</td>
+<td>&ndash;version</td>
+<td>false</td>
+<td>Print version information and quit</td>
+</tr>
+<tr>
+<td>log</td>
+<td>logFlushFreq</td>
+<td>&ndash;log-flush-frequency</td>
+<td>5 * time.Second</td>
+<td>Maximum number of seconds between log flushes</td>
+</tr>
+</tbody>
+</table>
+<h3 id="help选项">help选项</h3>
+<p>特殊的选项，就是显示命令的帮助信息，使用-h或&ndash;help。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">cleanFlagSet</span><span class="p">.</span><span class="nf">BoolP</span><span class="p">(</span><span class="s">&#34;help&#34;</span><span class="p">,</span> <span class="s">&#34;h&#34;</span><span class="p">,</span> <span class="kc">false</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;help for %s&#34;</span><span class="p">,</span> <span class="nx">cmd</span><span class="p">.</span><span class="nf">Name</span><span class="p">()))</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">xiaoqing</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">
+        2021-02-17
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">License</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/kubernetes/">kubernetes</a>
+          <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">源码解析</a>
+          </div>
+      <nav class="post-nav">
+        
+        <a class="next" href="/post/taint-manager/">
+            <span class="next-text nav-default">Taint Manager源码解析</span>
+            <span class="next-text nav-mobile">Next</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:your@email.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/wu0407" class="iconfont icon-github" title="github"></a>
+  <a href="https://midbai.com/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021<span class="heart"><i class="iconfont icon-heart"></i></span><span>xiaoqing</span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.c12618f9a600c40bd024996677e951e64d3487006775aeb22e200c990006c5c7.js"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-29100285-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>
