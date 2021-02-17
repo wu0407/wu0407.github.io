@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>kubelet启动--日志初始化 - xiaoqing</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="xiaoqing" /><meta name="description" content="kubelet启动的时候进行日志klog相关的初始化" /><meta name="keywords" content="kubernetes, kubelet, klog, 源码解析" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.79.1 with theme even" />
+
+
+<link rel="canonical" href="https://midbai.com/post/kubelet-run-log-init/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.c7bc1becf36bcf6a9ebd25d2947e43a2eb745ddb0c9a32b43126fd7fa460c351.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="kubelet启动--日志初始化" />
+<meta property="og:description" content="kubelet启动的时候进行日志klog相关的初始化" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://midbai.com/post/kubelet-run-log-init/" />
+<meta property="article:published_time" content="2021-02-17T21:14:20+08:00" />
+<meta property="article:modified_time" content="2021-02-17T21:14:20+08:00" />
+<meta itemprop="name" content="kubelet启动--日志初始化">
+<meta itemprop="description" content="kubelet启动的时候进行日志klog相关的初始化">
+<meta itemprop="datePublished" content="2021-02-17T21:14:20+08:00" />
+<meta itemprop="dateModified" content="2021-02-17T21:14:20+08:00" />
+<meta itemprop="wordCount" content="2125">
+
+
+
+<meta itemprop="keywords" content="kubernetes,源码解析,kubelet," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="kubelet启动--日志初始化"/>
+<meta name="twitter:description" content="kubelet启动的时候进行日志klog相关的初始化"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">xiaoqing blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">Categories</li>
+      </a><a href="/categories/kubernetes/">
+        <li class="mobile-menu-item">Kubernetes</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">xiaoqing blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">Categories</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/kubernetes/">Kubernetes</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">kubelet启动--日志初始化</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2021-02-17 </span>
+        <div class="post-category">
+            <a href="/categories/kubernetes/"> kubernetes </a>
+            </div>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Contents</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#入口文件">入口文件</a></li>
+        <li><a href="#模块初始化">模块初始化</a>
+          <ul>
+            <li><a href="#加载k8siocomponent-baselogs模块">加载<code>k8s.io/component-base/logs</code>模块</a></li>
+            <li><a href="#加载klog模块">加载klog模块</a></li>
+            <li><a href="#执行kloginitflag">执行klog.InitFlag</a></li>
+          </ul>
+        </li>
+        <li><a href="#执行component-baselogs的initlogs">执行component-base/logs的InitLogs</a></li>
+        <li><a href="#再次注册klog命令行选项">再次注册klog命令行选项</a></li>
+        <li><a href="#程序退出flushlog">程序退出flushlog</a></li>
+        <li><a href="#总结">总结</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <p>kubernetes 默认使用的日志库是klog，kubernetes的<code>k8s.io/component-base/logs</code>库，专门做日志初始化相关操作。</p>
+<p>klog是glog的fork版本，由于glog不在开发、在容器中运行有一系列问题、不容易测试等问题，所以kubenetes自己维护了一个klog。</p>
+<p>在1.18版本中使用v1.0.0版本的klog，这个版本的<code>--add_dir_header</code>不生效，在https://github.com/kubernetes/klog/pull/101修复了，但是在1.18中一直存在这个问题，小版本更新一直没有更新klog版本。</p>
+<h2 id="入口文件">入口文件</h2>
+<p>kubelet在main函数中直接调用<code>k8s.io/component-base/logs</code>的InitLogs()初始化日志，并在程序退出时候执行flushlog。</p>
+<p>cmd\kubelet\kubelet.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;math/rand&#34;</span>
+	<span class="s">&#34;os&#34;</span>
+	<span class="s">&#34;time&#34;</span>
+
+	<span class="s">&#34;k8s.io/component-base/logs&#34;</span>
+	<span class="nx">_</span> <span class="s">&#34;k8s.io/component-base/metrics/prometheus/restclient&#34;</span>
+	<span class="nx">_</span> <span class="s">&#34;k8s.io/component-base/metrics/prometheus/version&#34;</span> <span class="c1">// for version metric registration
+</span><span class="c1"></span>	<span class="s">&#34;k8s.io/kubernetes/cmd/kubelet/app&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">rand</span><span class="p">.</span><span class="nf">Seed</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">UnixNano</span><span class="p">())</span>
+
+	<span class="nx">command</span> <span class="o">:=</span> <span class="nx">app</span><span class="p">.</span><span class="nf">NewKubeletCommand</span><span class="p">()</span>
+	<span class="nx">logs</span><span class="p">.</span><span class="nf">InitLogs</span><span class="p">()</span>
+	<span class="k">defer</span> <span class="nx">logs</span><span class="p">.</span><span class="nf">FlushLogs</span><span class="p">()</span>
+
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">command</span><span class="p">.</span><span class="nf">Execute</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="模块初始化">模块初始化</h2>
+<h3 id="加载k8siocomponent-baselogs模块">加载<code>k8s.io/component-base/logs</code>模块</h3>
+<p>这个模块还会加载klog模块，而klog模块也有init()。</p>
+<p>全局变量logFlushFreq&ndash;注册命令行选项<code>--log-flush-frequency</code>，init()&ndash;初始化klog。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">const</span> <span class="nx">logFlushFreqFlagName</span> <span class="p">=</span> <span class="s">&#34;log-flush-frequency&#34;</span>
+
+<span class="kd">var</span> <span class="nx">logFlushFreq</span> <span class="p">=</span> <span class="nx">pflag</span><span class="p">.</span><span class="nf">Duration</span><span class="p">(</span><span class="nx">logFlushFreqFlagName</span><span class="p">,</span> <span class="mi">5</span><span class="o">*</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">,</span> <span class="s">&#34;Maximum number of seconds between log flushes&#34;</span><span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">klog</span><span class="p">.</span><span class="nf">InitFlags</span><span class="p">(</span><span class="nx">flag</span><span class="p">.</span><span class="nx">CommandLine</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="加载klog模块">加载klog模块</h3>
+<p>设置命令行选项的默认值和goroutine来周期性刷写日志。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// init sets up the defaults and runs flushDaemon.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">logging</span><span class="p">.</span><span class="nx">stderrThreshold</span> <span class="p">=</span> <span class="nx">errorLog</span> <span class="c1">// Default stderrThreshold is ERROR.
+</span><span class="c1"></span>	<span class="nx">logging</span><span class="p">.</span><span class="nf">setVState</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="kc">false</span><span class="p">)</span>
+	<span class="nx">logging</span><span class="p">.</span><span class="nx">logDir</span> <span class="p">=</span> <span class="s">&#34;&#34;</span>
+	<span class="nx">logging</span><span class="p">.</span><span class="nx">logFile</span> <span class="p">=</span> <span class="s">&#34;&#34;</span>
+	<span class="nx">logging</span><span class="p">.</span><span class="nx">logFileMaxSizeMB</span> <span class="p">=</span> <span class="mi">1800</span>
+	<span class="nx">logging</span><span class="p">.</span><span class="nx">toStderr</span> <span class="p">=</span> <span class="kc">true</span>
+	<span class="nx">logging</span><span class="p">.</span><span class="nx">alsoToStderr</span> <span class="p">=</span> <span class="kc">false</span>
+	<span class="nx">logging</span><span class="p">.</span><span class="nx">skipHeaders</span> <span class="p">=</span> <span class="kc">false</span>
+	<span class="nx">logging</span><span class="p">.</span><span class="nx">addDirHeader</span> <span class="p">=</span> <span class="kc">false</span>
+	<span class="nx">logging</span><span class="p">.</span><span class="nx">skipLogHeaders</span> <span class="p">=</span> <span class="kc">false</span>
+	<span class="k">go</span> <span class="nx">logging</span><span class="p">.</span><span class="nf">flushDaemon</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>flushDaemon()&ndash;每隔5秒执行lockAndFlushAll()</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">const</span> <span class="nx">flushInterval</span> <span class="p">=</span> <span class="mi">5</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span>
+
+<span class="c1">// flushDaemon periodically flushes the log file buffers.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">l</span> <span class="o">*</span><span class="nx">loggingT</span><span class="p">)</span> <span class="nf">flushDaemon</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="k">range</span> <span class="nx">time</span><span class="p">.</span><span class="nf">NewTicker</span><span class="p">(</span><span class="nx">flushInterval</span><span class="p">).</span><span class="nx">C</span> <span class="p">{</span>
+		<span class="nx">l</span><span class="p">.</span><span class="nf">lockAndFlushAll</span><span class="p">()</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// lockAndFlushAll is like flushAll but locks l.mu first.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">l</span> <span class="o">*</span><span class="nx">loggingT</span><span class="p">)</span> <span class="nf">lockAndFlushAll</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">l</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+	<span class="nx">l</span><span class="p">.</span><span class="nf">flushAll</span><span class="p">()</span>
+	<span class="nx">l</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="c1">// flushAll flushes all the logs and attempts to &#34;sync&#34; their data to disk.
+</span><span class="c1">// l.mu is held.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">l</span> <span class="o">*</span><span class="nx">loggingT</span><span class="p">)</span> <span class="nf">flushAll</span><span class="p">()</span> <span class="p">{</span>
+	<span class="c1">// Flush from fatal down, in case there&#39;s trouble flushing.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">s</span> <span class="o">:=</span> <span class="nx">fatalLog</span><span class="p">;</span> <span class="nx">s</span> <span class="o">&gt;=</span> <span class="nx">infoLog</span><span class="p">;</span> <span class="nx">s</span><span class="o">--</span> <span class="p">{</span>
+		<span class="nx">file</span> <span class="o">:=</span> <span class="nx">l</span><span class="p">.</span><span class="nx">file</span><span class="p">[</span><span class="nx">s</span><span class="p">]</span>
+		<span class="k">if</span> <span class="nx">file</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">file</span><span class="p">.</span><span class="nf">Flush</span><span class="p">()</span> <span class="c1">// ignore error
+</span><span class="c1"></span>			<span class="nx">file</span><span class="p">.</span><span class="nf">Sync</span><span class="p">()</span>  <span class="c1">// ignore error
+</span><span class="c1"></span>		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="执行kloginitflag">执行klog.InitFlag</h3>
+<p>注册klog命令行选项</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// InitFlags is for explicitly initializing the flags.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">InitFlags</span><span class="p">(</span><span class="nx">flagset</span> <span class="o">*</span><span class="nx">flag</span><span class="p">.</span><span class="nx">FlagSet</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">flagset</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">flagset</span> <span class="p">=</span> <span class="nx">flag</span><span class="p">.</span><span class="nx">CommandLine</span>
+	<span class="p">}</span>
+
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">StringVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">logDir</span><span class="p">,</span> <span class="s">&#34;log_dir&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">logDir</span><span class="p">,</span> <span class="s">&#34;If non-empty, write log files in this directory&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">StringVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">logFile</span><span class="p">,</span> <span class="s">&#34;log_file&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">logFile</span><span class="p">,</span> <span class="s">&#34;If non-empty, use this log file&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">Uint64Var</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">logFileMaxSizeMB</span><span class="p">,</span> <span class="s">&#34;log_file_max_size&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">logFileMaxSizeMB</span><span class="p">,</span>
+		<span class="s">&#34;Defines the maximum size a log file can grow to. Unit is megabytes. &#34;</span><span class="o">+</span>
+			<span class="s">&#34;If the value is 0, the maximum file size is unlimited.&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">BoolVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">toStderr</span><span class="p">,</span> <span class="s">&#34;logtostderr&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">toStderr</span><span class="p">,</span> <span class="s">&#34;log to standard error instead of files&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">BoolVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">alsoToStderr</span><span class="p">,</span> <span class="s">&#34;alsologtostderr&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">alsoToStderr</span><span class="p">,</span> <span class="s">&#34;log to standard error as well as files&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">Var</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">verbosity</span><span class="p">,</span> <span class="s">&#34;v&#34;</span><span class="p">,</span> <span class="s">&#34;number for the log level verbosity&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">BoolVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">skipHeaders</span><span class="p">,</span> <span class="s">&#34;add_dir_header&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">addDirHeader</span><span class="p">,</span> <span class="s">&#34;If true, adds the file directory to the header&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">BoolVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">skipHeaders</span><span class="p">,</span> <span class="s">&#34;skip_headers&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">skipHeaders</span><span class="p">,</span> <span class="s">&#34;If true, avoid header prefixes in the log messages&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">BoolVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">skipLogHeaders</span><span class="p">,</span> <span class="s">&#34;skip_log_headers&#34;</span><span class="p">,</span> <span class="nx">logging</span><span class="p">.</span><span class="nx">skipLogHeaders</span><span class="p">,</span> <span class="s">&#34;If true, avoid headers when opening log files&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">Var</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">stderrThreshold</span><span class="p">,</span> <span class="s">&#34;stderrthreshold&#34;</span><span class="p">,</span> <span class="s">&#34;logs at or above this threshold go to stderr&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">Var</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">vmodule</span><span class="p">,</span> <span class="s">&#34;vmodule&#34;</span><span class="p">,</span> <span class="s">&#34;comma-separated list of pattern=N settings for file-filtered logging&#34;</span><span class="p">)</span>
+	<span class="nx">flagset</span><span class="p">.</span><span class="nf">Var</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">logging</span><span class="p">.</span><span class="nx">traceLocation</span><span class="p">,</span> <span class="s">&#34;log_backtrace_at&#34;</span><span class="p">,</span> <span class="s">&#34;when logging hits line file:N, emit a stack trace&#34;</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="执行component-baselogs的initlogs">执行component-base/logs的InitLogs</h2>
+<p>兼容系统log库&ndash;如果使用系统的log库来写日志，最终还是使用klog来记录。然后设置log库将原始的日志传给klog，不做任何处理。</p>
+<p>比如使用log.Print来记录日志，它最终会调用KlogWriter的Write方法来记录。</p>
+<p>为什么要兼容系统log库记录？</p>
+<p>可能是历史原因一些使用外部库的日志使用的是系统的log库。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// Write implements the io.Writer interface.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">writer</span> <span class="nx">KlogWriter</span><span class="p">)</span> <span class="nf">Write</span><span class="p">(</span><span class="nx">data</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="nx">n</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">klog</span><span class="p">.</span><span class="nf">InfoDepth</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">string</span><span class="p">(</span><span class="nx">data</span><span class="p">))</span>
+	<span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="nx">data</span><span class="p">),</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="c1">// InitLogs initializes logs the way we want for kubernetes.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">InitLogs</span><span class="p">()</span> <span class="p">{</span>
+	<span class="c1">// 兼容使用log来记录，实际还是使用klog
+</span><span class="c1"></span>	<span class="nx">log</span><span class="p">.</span><span class="nf">SetOutput</span><span class="p">(</span><span class="nx">KlogWriter</span><span class="p">{})</span>
+	<span class="c1">// 设置log输出格式为空，日志格式由klog决定
+</span><span class="c1"></span>	<span class="nx">log</span><span class="p">.</span><span class="nf">SetFlags</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+	<span class="c1">// The default glog flush interval is 5 seconds.
+</span><span class="c1"></span>	<span class="k">go</span> <span class="nx">wait</span><span class="p">.</span><span class="nf">Forever</span><span class="p">(</span><span class="nx">klog</span><span class="p">.</span><span class="nx">Flush</span><span class="p">,</span> <span class="o">*</span><span class="nx">logFlushFreq</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>klog.Flush()&ndash;执行日志的刷写，这里与上面的klog init起的goroutine执行一样的方法lockAndFlushAll()，kubelet起了两个goroutine来刷写日志。疑惑？</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// Flush flushes all pending log I/O.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">Flush</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">logging</span><span class="p">.</span><span class="nf">lockAndFlushAll</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="再次注册klog命令行选项">再次注册klog命令行选项</h2>
+<p>执行到addKlogFlags(fs)时候，再次执行klog.InitFlag。</p>
+<p><strong>为什么再次执行klog.InitFlag?</strong></p>
+<p>仔细会发现再次执行时候的参数是一个新建的flagset&ndash;<code>flag.NewFlagSet(os.Args[0], flag.ExitOnError)</code>(不是<code>flag.CommandLine</code>)，也就是说在这个flagset中重复注册命令行选项，然后保存到kubelet的pflagset中，而<code>flag.CommandLine</code>的放者不用，这个极大浪费。</p>
+<p>从commit提交信息发现，addKlogFlags是klog升级到0.3.0版本添加的&ndash;<a href="https://github.com/kubernetes/kubernetes/pull/76474">相关pull request</a>，我猜测是klog升级到1.0.0版本，但是kubelet代码没有做相应变化。</p>
+<p>cmd\kubelet\app\options\globalflags.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// AddGlobalFlags explicitly registers flags that libraries (glog, verflag, etc.) register
+</span><span class="c1">// against the global flagsets from &#34;flag&#34; and &#34;github.com/spf13/pflag&#34;.
+</span><span class="c1">// We do this in order to prevent unwanted flags from leaking into the Kubelet&#39;s flagset.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">AddGlobalFlags</span><span class="p">(</span><span class="nx">fs</span> <span class="o">*</span><span class="nx">pflag</span><span class="p">.</span><span class="nx">FlagSet</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nf">addKlogFlags</span><span class="p">(</span><span class="nx">fs</span><span class="p">)</span>
+	<span class="nf">addCadvisorFlags</span><span class="p">(</span><span class="nx">fs</span><span class="p">)</span>
+	<span class="nf">addCredentialProviderFlags</span><span class="p">(</span><span class="nx">fs</span><span class="p">)</span>
+	<span class="nx">verflag</span><span class="p">.</span><span class="nf">AddFlags</span><span class="p">(</span><span class="nx">fs</span><span class="p">)</span>
+	<span class="nx">logs</span><span class="p">.</span><span class="nf">AddFlags</span><span class="p">(</span><span class="nx">fs</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// addKlogFlags adds flags from k8s.io/klog
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">addKlogFlags</span><span class="p">(</span><span class="nx">fs</span> <span class="o">*</span><span class="nx">pflag</span><span class="p">.</span><span class="nx">FlagSet</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">local</span> <span class="o">:=</span> <span class="nx">flag</span><span class="p">.</span><span class="nf">NewFlagSet</span><span class="p">(</span><span class="nx">os</span><span class="p">.</span><span class="nx">Args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nx">flag</span><span class="p">.</span><span class="nx">ExitOnError</span><span class="p">)</span>
+	<span class="nx">klog</span><span class="p">.</span><span class="nf">InitFlags</span><span class="p">(</span><span class="nx">local</span><span class="p">)</span>
+	<span class="nx">fs</span><span class="p">.</span><span class="nf">AddGoFlagSet</span><span class="p">(</span><span class="nx">local</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="程序退出flushlog">程序退出flushlog</h2>
+<p>程序退出flush日志，保证日志不会丢失。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// FlushLogs flushes logs immediately.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">FlushLogs</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">klog</span><span class="p">.</span><span class="nf">Flush</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="总结">总结</h2>
+<p>感觉日志这块一直在演进，难免会存在历史账，但是最终是work的😂。在kubernetes 1.20版本中， klog升级到2.4.0版本，更好的支持结构化的日志。</p>
+<p>这里没有分析klog源码，后面有时间再分析klog。kubernetes真的太大了，能不能在它衰退前看完，时间真不够。</p>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">xiaoqing</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">
+        2021-02-17
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">License</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/kubernetes/">kubernetes</a>
+          <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">源码解析</a>
+          <a href="/tags/kubelet/">kubelet</a>
+          </div>
+      <nav class="post-nav">
+        
+        <a class="next" href="/post/kubelet-run-command-line-init/">
+            <span class="next-text nav-default">kubelet启动--命令行初始化</span>
+            <span class="next-text nav-mobile">Next</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:your@email.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/wu0407" class="iconfont icon-github" title="github"></a>
+  <a href="https://midbai.com/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021<span class="heart"><i class="iconfont icon-heart"></i></span><span>xiaoqing</span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.c12618f9a600c40bd024996677e951e64d3487006775aeb22e200c990006c5c7.js"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-29100285-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

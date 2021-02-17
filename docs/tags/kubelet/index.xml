@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>kubelet on xiaoqing</title>
+    <link>https://midbai.com/tags/kubelet/</link>
+    <description>Recent content in kubelet on xiaoqing</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Wed, 17 Feb 2021 21:14:20 +0800</lastBuildDate><atom:link href="https://midbai.com/tags/kubelet/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>kubelet启动--日志初始化</title>
+      <link>https://midbai.com/post/kubelet-run-log-init/</link>
+      <pubDate>Wed, 17 Feb 2021 21:14:20 +0800</pubDate>
+      
+      <guid>https://midbai.com/post/kubelet-run-log-init/</guid>
+      <description>&lt;p&gt;kubernetes 默认使用的日志库是klog，kubernetes的&lt;code&gt;k8s.io/component-base/logs&lt;/code&gt;库，专门做日志初始化相关操作。&lt;/p&gt;
+&lt;p&gt;klog是glog的fork版本，由于glog不在开发、在容器中运行有一系列问题、不容易测试等问题，所以kubenetes自己维护了一个klog。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>kubelet启动--命令行初始化</title>
+      <link>https://midbai.com/post/kubelet-run-command-line-init/</link>
+      <pubDate>Wed, 17 Feb 2021 12:07:53 +0800</pubDate>
+      
+      <guid>https://midbai.com/post/kubelet-run-command-line-init/</guid>
+      <description>概述 kubelet命令行参数有177个，是kubernetes组件中配置项最多的。 kubelet的选项分为三类，一类是kubletFlags&amp;ndash;（启动之后不能随时改变的，只能通过命令行配置，比如ip地址、路径等）；另一类是kube</description>
+    </item>
+    
+  </channel>
+</rss>

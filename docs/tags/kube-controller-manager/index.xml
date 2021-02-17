@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>kube-controller-manager on xiaoqing</title>
+    <link>https://midbai.com/tags/kube-controller-manager/</link>
+    <description>Recent content in kube-controller-manager on xiaoqing</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Sat, 26 Dec 2020 20:50:47 +0800</lastBuildDate><atom:link href="https://midbai.com/tags/kube-controller-manager/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Node Lifecycle Controller Manager源码解析</title>
+      <link>https://midbai.com/post/node-lifecycle-controller-manager/</link>
+      <pubDate>Sat, 26 Dec 2020 20:50:47 +0800</pubDate>
+      
+      <guid>https://midbai.com/post/node-lifecycle-controller-manager/</guid>
+      <description>&lt;p&gt;Node Lifecycle Controller根据node的lease和node status更新时间，决定是否驱逐node上的pod或设置taint，设置node ready condition为unknown。&lt;/p&gt;
+&lt;p&gt;并且根据整个集群状态和zone里不同数量的unready node，设置不同的node速率-来添加taint或执行驱逐pod。&lt;/p&gt;</description>
+    </item>
+    
+  </channel>
+</rss>
