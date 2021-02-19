@@ -45,7 +45,7 @@
 <meta property="og:description" content="Share the technology, broadcaster myself." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://midbai.com/" />
-<meta property="og:updated_time" content="2021-02-17T21:14:20+08:00" />
+<meta property="og:updated_time" content="2021-02-19T11:21:49+08:00" />
 <meta itemprop="name" content="xiaoqing">
 <meta itemprop="description" content="Share the technology, broadcaster myself.">
 <meta name="twitter:card" content="summary"/>
@@ -120,6 +120,28 @@
         <div id="content" class="content">
           <section id="posts" class="posts">
     
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/post/kubelet-run-feature-gate-init/">kubelet启动--FeatureGate初始化</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2021-02-19 </span>
+      <div class="post-category">
+          <a href="/categories/kubernetes/"> kubernetes </a>
+          </div>
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>kubernetes有很多的功能特性，这些特性一般都有关联的KEP。特性的成熟度有alpha、beta、GA、Deprecated，alpha代表不稳定，beta代表相对稳定有可能有bug，GA代表已经可用。 特性的生命阶段有KEP提出、alpha阶段、beta阶段、GA阶段、废弃。alpha阶段默认不启用，beta阶段默认启用 。更多feature gate相关知识请访问&ndash;<a href="https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/">Feature Gates</a>和<a href="https://github.com/kubernetes/enhancements/blob/master/keps/sig-architecture/0000-kep-process/README.md">KEP</a>。</p>
+<p>feature gate用来控制某项特性打开或关闭，当然GA的特性不能关闭。本文以kubelet源码为例，分析feature gate如何工作的。</p>
+    </div>
+    <div class="read-more">
+      <a href="/post/kubelet-run-feature-gate-init/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
     <article class="post">
   <header class="post-header">
     <h1 class="post-title"><a class="post-link" href="/post/kubelet-run-log-init/">kubelet启动--日志初始化</a></h1>

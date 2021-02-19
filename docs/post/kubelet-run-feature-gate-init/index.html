@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>kubelet启动--FeatureGate初始化 - xiaoqing</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="xiaoqing" /><meta name="description" content="kubelet的FeatureGate初始化和修改和使用" /><meta name="keywords" content="kubernetes, kubelet, FeatureGate, 源码解析" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.79.1 with theme even" />
+
+
+<link rel="canonical" href="https://midbai.com/post/kubelet-run-feature-gate-init/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.c7bc1becf36bcf6a9ebd25d2947e43a2eb745ddb0c9a32b43126fd7fa460c351.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="kubelet启动--FeatureGate初始化" />
+<meta property="og:description" content="kubelet的FeatureGate初始化和修改和使用" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://midbai.com/post/kubelet-run-feature-gate-init/" />
+<meta property="article:published_time" content="2021-02-19T11:21:49+08:00" />
+<meta property="article:modified_time" content="2021-02-19T11:21:49+08:00" />
+<meta itemprop="name" content="kubelet启动--FeatureGate初始化">
+<meta itemprop="description" content="kubelet的FeatureGate初始化和修改和使用">
+<meta itemprop="datePublished" content="2021-02-19T11:21:49+08:00" />
+<meta itemprop="dateModified" content="2021-02-19T11:21:49+08:00" />
+<meta itemprop="wordCount" content="5209">
+
+
+
+<meta itemprop="keywords" content="kubernetes,源码解析,kubelet," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="kubelet启动--FeatureGate初始化"/>
+<meta name="twitter:description" content="kubelet的FeatureGate初始化和修改和使用"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">xiaoqing blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">Categories</li>
+      </a><a href="/categories/kubernetes/">
+        <li class="mobile-menu-item">Kubernetes</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">About</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">xiaoqing blog</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">Categories</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/kubernetes/">Kubernetes</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">About</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">kubelet启动--FeatureGate初始化</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2021-02-19 </span>
+        <div class="post-category">
+            <a href="/categories/kubernetes/"> kubernetes </a>
+            </div>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Contents</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#模块初始化">模块初始化</a>
+          <ul>
+            <li><a href="#加载k8sioapiserverpkgutilfeature">加载k8s.io/apiserver/pkg/util/feature</a></li>
+            <li><a href="#加载k8siokubernetespkgfeatures">加载k8s.io/kubernetes/pkg/features</a></li>
+          </ul>
+        </li>
+        <li><a href="#设置feature-gate">设置feature gate</a></li>
+        <li><a href="#使用配置">使用配置</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <p>kubernetes有很多的功能特性，这些特性一般都有关联的KEP。特性的成熟度有alpha、beta、GA、Deprecated，alpha代表不稳定，beta代表相对稳定有可能有bug，GA代表已经可用。 特性的生命阶段有KEP提出、alpha阶段、beta阶段、GA阶段、废弃。alpha阶段默认不启用，beta阶段默认启用 。更多feature gate相关知识请访问&ndash;<a href="https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/">Feature Gates</a>和<a href="https://github.com/kubernetes/enhancements/blob/master/keps/sig-architecture/0000-kep-process/README.md">KEP</a>。</p>
+<p>feature gate用来控制某项特性打开或关闭，当然GA的特性不能关闭。本文以kubelet源码为例，分析feature gate如何工作的。</p>
+<p>本文基于kubernetes 1.18.6版本，请访问<a href="https://github.com/wu0407/kubernetes-code-analysis">源代码阅读仓库</a>。</p>
+<h2 id="模块初始化">模块初始化</h2>
+<p>在cmd\kubelet\app\server.go会加载<code>k8s.io/apiserver/pkg/util/feature</code>和<code>k8s.io/component-base/featuregate</code>和<code>k8s.io/kubernetes/pkg/features</code>。其中<code>k8s.io/apiserver/pkg/util/feature</code>定义了两个全局变量<code>DefaultMutableFeatureGate</code>和<code>DefaultFeatureGate</code>。<code>k8s.io/component-base/featuregate</code>定义了<code>featureGate</code>类型和类型的方法。<code>k8s.io/kubernetes/pkg/features</code>定义了默认的featuregate设置。</p>
+<h3 id="加载k8sioapiserverpkgutilfeature">加载k8s.io/apiserver/pkg/util/feature</h3>
+<p>DefaultMutableFeatureGate 和DefaultFeatureGate是相同的，只是DefaultMutableFeatureGate对外提供读写能力，而DefaultFeatureGate提供只读。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">feature</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;k8s.io/component-base/featuregate&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">var</span> <span class="p">(</span>
+	<span class="c1">// DefaultMutableFeatureGate is a mutable version of DefaultFeatureGate.
+</span><span class="c1"></span>	<span class="c1">// Only top-level commands/options setup and the k8s.io/component-base/featuregate/testing package should make use of this.
+</span><span class="c1"></span>	<span class="c1">// Tests that need to modify feature gates for the duration of their test should use:
+</span><span class="c1"></span>	<span class="c1">//   defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.&lt;FeatureName&gt;, &lt;value&gt;)()
+</span><span class="c1"></span>	<span class="nx">DefaultMutableFeatureGate</span> <span class="nx">featuregate</span><span class="p">.</span><span class="nx">MutableFeatureGate</span> <span class="p">=</span> <span class="nx">featuregate</span><span class="p">.</span><span class="nf">NewFeatureGate</span><span class="p">()</span>
+
+	<span class="c1">// DefaultFeatureGate is a shared global FeatureGate.
+</span><span class="c1"></span>	<span class="c1">// Top-level commands/options setup that needs to modify this feature gate should use DefaultMutableFeatureGate.
+</span><span class="c1"></span>	<span class="nx">DefaultFeatureGate</span> <span class="nx">featuregate</span><span class="p">.</span><span class="nx">FeatureGate</span> <span class="p">=</span> <span class="nx">DefaultMutableFeatureGate</span>
+<span class="p">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>featuregate.NewFeatureGate() 返回一个known包含AllAlpha和AllBeta的featureSpec，AllAlpha代表所有alpha阶段的featureGate，它默认为不启用；AllBeta代表所有beta阶段的featureGate，默认为不启用。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="o">&amp;</span><span class="nx">featureGate</span><span class="p">{</span>
+		<span class="nx">featureGateName</span><span class="p">:</span> <span class="s">&#34;k8s.io/apiserver/pkg/util/feature/feature_gate.go&#34;</span><span class="p">,</span>
+		<span class="nx">known</span><span class="p">:</span>           <span class="nx">knownValue</span><span class="p">,</span>  <span class="c1">//包含AllAlpha和AllBeta的FeatureSpec的atomic.Value
+</span><span class="c1"></span>		<span class="nx">special</span><span class="p">:</span>         <span class="nx">specialFeatures</span><span class="p">,</span>
+		<span class="nx">enabled</span><span class="p">:</span>         <span class="nx">enabledValue</span><span class="p">,</span> <span class="c1">//空的atomic.Value
+</span><span class="c1"></span>	<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>staging\src\k8s.io\component-base\featuregate\feature_gate.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span><span class="lnt">103
+</span><span class="lnt">104
+</span><span class="lnt">105
+</span><span class="lnt">106
+</span><span class="lnt">107
+</span><span class="lnt">108
+</span><span class="lnt">109
+</span><span class="lnt">110
+</span><span class="lnt">111
+</span><span class="lnt">112
+</span><span class="lnt">113
+</span><span class="lnt">114
+</span><span class="lnt">115
+</span><span class="lnt">116
+</span><span class="lnt">117
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">const</span> <span class="p">(</span>
+	<span class="nx">flagName</span> <span class="p">=</span> <span class="s">&#34;feature-gates&#34;</span>
+
+	<span class="c1">// allAlphaGate is a global toggle for alpha features. Per-feature key
+</span><span class="c1"></span>	<span class="c1">// values override the default set by allAlphaGate. Examples:
+</span><span class="c1"></span>	<span class="c1">//   AllAlpha=false,NewFeature=true  will result in newFeature=true
+</span><span class="c1"></span>	<span class="c1">//   AllAlpha=true,NewFeature=false  will result in newFeature=false
+</span><span class="c1"></span>	<span class="nx">allAlphaGate</span> <span class="nx">Feature</span> <span class="p">=</span> <span class="s">&#34;AllAlpha&#34;</span>
+
+	<span class="c1">// allBetaGate is a global toggle for beta features. Per-feature key
+</span><span class="c1"></span>	<span class="c1">// values override the default set by allBetaGate. Examples:
+</span><span class="c1"></span>	<span class="c1">//   AllBeta=false,NewFeature=true  will result in NewFeature=true
+</span><span class="c1"></span>	<span class="c1">//   AllBeta=true,NewFeature=false  will result in NewFeature=false
+</span><span class="c1"></span>	<span class="nx">allBetaGate</span> <span class="nx">Feature</span> <span class="p">=</span> <span class="s">&#34;AllBeta&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">var</span> <span class="p">(</span>
+	<span class="c1">// The generic features.
+</span><span class="c1"></span>	<span class="nx">defaultFeatures</span> <span class="p">=</span> <span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="nx">FeatureSpec</span><span class="p">{</span>
+		<span class="nx">allAlphaGate</span><span class="p">:</span> <span class="p">{</span><span class="nx">Default</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span> <span class="nx">PreRelease</span><span class="p">:</span> <span class="nx">Alpha</span><span class="p">},</span>
+		<span class="nx">allBetaGate</span><span class="p">:</span>  <span class="p">{</span><span class="nx">Default</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span> <span class="nx">PreRelease</span><span class="p">:</span> <span class="nx">Beta</span><span class="p">},</span>
+	<span class="p">}</span>
+
+    	<span class="c1">// Special handling for a few gates.
+</span><span class="c1"></span>	<span class="nx">specialFeatures</span> <span class="p">=</span> <span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="kd">func</span><span class="p">(</span><span class="nx">known</span> <span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="nx">FeatureSpec</span><span class="p">,</span> <span class="nx">enabled</span> <span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="kt">bool</span><span class="p">,</span> <span class="nx">val</span> <span class="kt">bool</span><span class="p">){</span>
+		<span class="nx">allAlphaGate</span><span class="p">:</span> <span class="nx">setUnsetAlphaGates</span><span class="p">,</span>
+		<span class="nx">allBetaGate</span><span class="p">:</span>  <span class="nx">setUnsetBetaGates</span><span class="p">,</span>
+	<span class="p">}</span>
+<span class="p">)</span>
+
+<span class="kd">type</span> <span class="nx">FeatureSpec</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="c1">// Default is the default enablement state for the feature
+</span><span class="c1"></span>	<span class="nx">Default</span> <span class="kt">bool</span>
+	<span class="c1">// LockToDefault indicates that the feature is locked to its default and cannot be changed
+</span><span class="c1"></span>	<span class="nx">LockToDefault</span> <span class="kt">bool</span>
+	<span class="c1">// PreRelease indicates the maturity level of the feature
+</span><span class="c1"></span>	<span class="nx">PreRelease</span> <span class="nx">prerelease</span>
+<span class="p">}</span>
+
+<span class="c1">// FeatureGate indicates whether a given feature is enabled or not
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">FeatureGate</span> <span class="kd">interface</span> <span class="p">{</span>
+	<span class="c1">// Enabled returns true if the key is enabled.
+</span><span class="c1"></span>	<span class="nf">Enabled</span><span class="p">(</span><span class="nx">key</span> <span class="nx">Feature</span><span class="p">)</span> <span class="kt">bool</span>
+	<span class="c1">// KnownFeatures returns a slice of strings describing the FeatureGate&#39;s known features.
+</span><span class="c1"></span>	<span class="nf">KnownFeatures</span><span class="p">()</span> <span class="p">[]</span><span class="kt">string</span>
+	<span class="c1">// DeepCopy returns a deep copy of the FeatureGate object, such that gates can be
+</span><span class="c1"></span>	<span class="c1">// set on the copy without mutating the original. This is useful for validating
+</span><span class="c1"></span>	<span class="c1">// config against potential feature gate changes before committing those changes.
+</span><span class="c1"></span>	<span class="nf">DeepCopy</span><span class="p">()</span> <span class="nx">MutableFeatureGate</span>
+<span class="p">}</span>
+
+<span class="c1">// MutableFeatureGate parses and stores flag gates for known features from
+</span><span class="c1">// a string like feature1=true,feature2=false,...
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">MutableFeatureGate</span> <span class="kd">interface</span> <span class="p">{</span>
+	<span class="nx">FeatureGate</span>
+
+	<span class="c1">// AddFlag adds a flag for setting global feature gates to the specified FlagSet.
+</span><span class="c1"></span>	<span class="nf">AddFlag</span><span class="p">(</span><span class="nx">fs</span> <span class="o">*</span><span class="nx">pflag</span><span class="p">.</span><span class="nx">FlagSet</span><span class="p">)</span>
+	<span class="c1">// Set parses and stores flag gates for known features
+</span><span class="c1"></span>	<span class="c1">// from a string like feature1=true,feature2=false,...
+</span><span class="c1"></span>	<span class="nf">Set</span><span class="p">(</span><span class="nx">value</span> <span class="kt">string</span><span class="p">)</span> <span class="kt">error</span>
+	<span class="c1">// SetFromMap stores flag gates for known features from a map[string]bool or returns an error
+</span><span class="c1"></span>	<span class="nf">SetFromMap</span><span class="p">(</span><span class="nx">m</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">bool</span><span class="p">)</span> <span class="kt">error</span>
+	<span class="c1">// Add adds features to the featureGate.
+</span><span class="c1"></span>	<span class="nf">Add</span><span class="p">(</span><span class="nx">features</span> <span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="nx">FeatureSpec</span><span class="p">)</span> <span class="kt">error</span>
+<span class="p">}</span>
+
+<span class="c1">// featureGate implements FeatureGate as well as pflag.Value for flag parsing.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">featureGate</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">featureGateName</span> <span class="kt">string</span>
+
+	<span class="nx">special</span> <span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="kd">func</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="nx">FeatureSpec</span><span class="p">,</span> <span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="kt">bool</span><span class="p">,</span> <span class="kt">bool</span><span class="p">)</span>
+
+	<span class="c1">// lock guards writes to known, enabled, and reads/writes of closed
+</span><span class="c1"></span>	<span class="nx">lock</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span>
+	<span class="c1">// known holds a map[Feature]FeatureSpec
+</span><span class="c1"></span>	<span class="nx">known</span> <span class="o">*</span><span class="nx">atomic</span><span class="p">.</span><span class="nx">Value</span>
+	<span class="c1">// enabled holds a map[Feature]bool
+</span><span class="c1"></span>	<span class="nx">enabled</span> <span class="o">*</span><span class="nx">atomic</span><span class="p">.</span><span class="nx">Value</span>
+	<span class="c1">// closed is set to true when AddFlag is called, and prevents subsequent calls to Add
+</span><span class="c1"></span>	<span class="nx">closed</span> <span class="kt">bool</span>
+<span class="p">}</span>
+
+<span class="kd">type</span> <span class="nx">prerelease</span> <span class="kt">string</span>
+
+<span class="kd">const</span> <span class="p">(</span>
+	<span class="c1">// Values for PreRelease.
+</span><span class="c1"></span>	<span class="nx">Alpha</span> <span class="p">=</span> <span class="nf">prerelease</span><span class="p">(</span><span class="s">&#34;ALPHA&#34;</span><span class="p">)</span>
+	<span class="nx">Beta</span>  <span class="p">=</span> <span class="nf">prerelease</span><span class="p">(</span><span class="s">&#34;BETA&#34;</span><span class="p">)</span>
+	<span class="nx">GA</span>    <span class="p">=</span> <span class="nf">prerelease</span><span class="p">(</span><span class="s">&#34;&#34;</span><span class="p">)</span>
+
+	<span class="c1">// Deprecated
+</span><span class="c1"></span>	<span class="nx">Deprecated</span> <span class="p">=</span> <span class="nf">prerelease</span><span class="p">(</span><span class="s">&#34;DEPRECATED&#34;</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">NewFeatureGate</span><span class="p">()</span> <span class="o">*</span><span class="nx">featureGate</span> <span class="p">{</span>
+	<span class="nx">known</span> <span class="o">:=</span> <span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="nx">FeatureSpec</span><span class="p">{}</span>
+	<span class="k">for</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">v</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">defaultFeatures</span> <span class="p">{</span>
+		<span class="nx">known</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span> <span class="p">=</span> <span class="nx">v</span>
+	<span class="p">}</span>
+
+	<span class="nx">knownValue</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">atomic</span><span class="p">.</span><span class="nx">Value</span><span class="p">{}</span>
+	<span class="nx">knownValue</span><span class="p">.</span><span class="nf">Store</span><span class="p">(</span><span class="nx">known</span><span class="p">)</span>
+
+	<span class="nx">enabled</span> <span class="o">:=</span> <span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="kt">bool</span><span class="p">{}</span>
+	<span class="nx">enabledValue</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">atomic</span><span class="p">.</span><span class="nx">Value</span><span class="p">{}</span>
+	<span class="nx">enabledValue</span><span class="p">.</span><span class="nf">Store</span><span class="p">(</span><span class="nx">enabled</span><span class="p">)</span>
+
+	<span class="nx">f</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">featureGate</span><span class="p">{</span>
+		<span class="nx">featureGateName</span><span class="p">:</span> <span class="nx">naming</span><span class="p">.</span><span class="nf">GetNameFromCallsite</span><span class="p">(</span><span class="nx">internalPackages</span><span class="o">...</span><span class="p">),</span>
+		<span class="nx">known</span><span class="p">:</span>           <span class="nx">knownValue</span><span class="p">,</span>
+		<span class="nx">special</span><span class="p">:</span>         <span class="nx">specialFeatures</span><span class="p">,</span>
+		<span class="nx">enabled</span><span class="p">:</span>         <span class="nx">enabledValue</span><span class="p">,</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">f</span>
+<span class="p">}</span>
+
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="加载k8siokubernetespkgfeatures">加载k8s.io/kubernetes/pkg/features</h3>
+<p>定义了所有已知的Feature和它的默认启用设置和成熟度，其中init()将默认的配置导入到utilfeature.DefaultMutableFeatureGate，所以DefaultMutableFeatureGate或DefaultFeatureGate的known保存了所有的默认的FeatureSpec和AllAlpha和AllBeta，其中DefaultFeatureGate.enabled是空的。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">const</span> <span class="p">(</span>
+	<span class="c1">// Every feature gate should add method here following this template:
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// // owner: @username
+</span><span class="c1"></span>	<span class="c1">// // alpha: v1.X
+</span><span class="c1"></span>	<span class="c1">// MyFeature featuregate.Feature = &#34;MyFeature&#34;
+</span><span class="c1"></span>
+	<span class="c1">// owner: @tallclair
+</span><span class="c1"></span>	<span class="c1">// beta: v1.4
+</span><span class="c1"></span>	<span class="nx">AppArmor</span> <span class="nx">featuregate</span><span class="p">.</span><span class="nx">Feature</span> <span class="p">=</span> <span class="s">&#34;AppArmor&#34;</span>
+
+	<span class="c1">// owner: @mtaufen
+</span><span class="c1"></span>	<span class="c1">// alpha: v1.4
+</span><span class="c1"></span>	<span class="c1">// beta: v1.11
+</span><span class="c1"></span>	<span class="nx">DynamicKubeletConfig</span> <span class="nx">featuregate</span><span class="p">.</span><span class="nx">Feature</span> <span class="p">=</span> <span class="s">&#34;DynamicKubeletConfig&#34;</span>
+    <span class="o">......</span><span class="p">.</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">runtime</span><span class="p">.</span><span class="nf">Must</span><span class="p">(</span><span class="nx">utilfeature</span><span class="p">.</span><span class="nx">DefaultMutableFeatureGate</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">defaultKubernetesFeatureGates</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="c1">// defaultKubernetesFeatureGates consists of all known Kubernetes-specific feature keys.
+</span><span class="c1">// To add a new feature, define a key for it above and add it here. The features will be
+</span><span class="c1">// available throughout Kubernetes binaries.
+</span><span class="c1"></span><span class="kd">var</span> <span class="nx">defaultKubernetesFeatureGates</span> <span class="p">=</span> <span class="kd">map</span><span class="p">[</span><span class="nx">featuregate</span><span class="p">.</span><span class="nx">Feature</span><span class="p">]</span><span class="nx">featuregate</span><span class="p">.</span><span class="nx">FeatureSpec</span><span class="p">{</span>
+	<span class="nx">AppArmor</span><span class="p">:</span>             <span class="p">{</span><span class="nx">Default</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span> <span class="nx">PreRelease</span><span class="p">:</span> <span class="nx">featuregate</span><span class="p">.</span><span class="nx">Beta</span><span class="p">},</span>
+	<span class="nx">DynamicKubeletConfig</span><span class="p">:</span> <span class="p">{</span><span class="nx">Default</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span> <span class="nx">PreRelease</span><span class="p">:</span> <span class="nx">featuregate</span><span class="p">.</span><span class="nx">Beta</span><span class="p">},</span>
+	<span class="nx">ExperimentalHostUserNamespaceDefaultingGate</span><span class="p">:</span> <span class="p">{</span><span class="nx">Default</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span> <span class="nx">PreRelease</span><span class="p">:</span> <span class="nx">featuregate</span><span class="p">.</span><span class="nx">Beta</span><span class="p">},</span>
+	<span class="nx">DevicePlugins</span><span class="p">:</span>                  <span class="p">{</span><span class="nx">Default</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span> <span class="nx">PreRelease</span><span class="p">:</span> <span class="nx">featuregate</span><span class="p">.</span><span class="nx">Beta</span><span class="p">},</span>
+    <span class="o">.........</span>
+<span class="p">}</span>
+
+</code></pre></td></tr></table>
+</div>
+</div><p>FeatureGate.Add定义在staging\src\k8s.io\component-base\featuregate\feature_gate.go</p>
+<p>遍历defaultKubernetesFeatureGates，如果Feature不在DefaultMutableFeatureGate的known中，则保存到known；已经存在且FeatureSpec一样，则忽略；已经存在且FeatureSpec不一样则报错。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// Add adds features to the featureGate.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <span class="o">*</span><span class="nx">featureGate</span><span class="p">)</span> <span class="nf">Add</span><span class="p">(</span><span class="nx">features</span> <span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="nx">FeatureSpec</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nx">f</span><span class="p">.</span><span class="nx">lock</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+	<span class="k">defer</span> <span class="nx">f</span><span class="p">.</span><span class="nx">lock</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+
+	<span class="k">if</span> <span class="nx">f</span><span class="p">.</span><span class="nx">closed</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;cannot add a feature gate after adding it to the flag set&#34;</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Copy existing state
+</span><span class="c1"></span>	<span class="nx">known</span> <span class="o">:=</span> <span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="nx">FeatureSpec</span><span class="p">{}</span>
+	<span class="k">for</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">v</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">f</span><span class="p">.</span><span class="nx">known</span><span class="p">.</span><span class="nf">Load</span><span class="p">().(</span><span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="nx">FeatureSpec</span><span class="p">)</span> <span class="p">{</span>
+		<span class="nx">known</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span> <span class="p">=</span> <span class="nx">v</span>
+	<span class="p">}</span>
+
+	<span class="k">for</span> <span class="nx">name</span><span class="p">,</span> <span class="nx">spec</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">features</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">existingSpec</span><span class="p">,</span> <span class="nx">found</span> <span class="o">:=</span> <span class="nx">known</span><span class="p">[</span><span class="nx">name</span><span class="p">];</span> <span class="nx">found</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="nx">existingSpec</span> <span class="o">==</span> <span class="nx">spec</span> <span class="p">{</span>
+				<span class="k">continue</span>
+			<span class="p">}</span>
+			<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;feature gate %q with different spec already exists: %v&#34;</span><span class="p">,</span> <span class="nx">name</span><span class="p">,</span> <span class="nx">existingSpec</span><span class="p">)</span>
+		<span class="p">}</span>
+
+		<span class="nx">known</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="p">=</span> <span class="nx">spec</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Persist updated state
+</span><span class="c1"></span>	<span class="nx">f</span><span class="p">.</span><span class="nx">known</span><span class="p">.</span><span class="nf">Store</span><span class="p">(</span><span class="nx">known</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="设置feature-gate">设置feature gate</h2>
+<p>有两种方式设置feature gate，一种命令行方式&ndash;比如<code>--feature-gates=HPAScaleToZero=true,EphemeralContainers=true</code>，另一种方式在配置文件配置（或者dynamic kubelet config方式），比如：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">featureGates:
+  SupportNodePidsLimit: true
+</code></pre></td></tr></table>
+</div>
+</div><p><code>--feature-gates</code>命令行选项定义配置</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">fs</span><span class="p">.</span><span class="nf">Var</span><span class="p">(</span><span class="nx">cliflag</span><span class="p">.</span><span class="nf">NewMapStringBool</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">c</span><span class="p">.</span><span class="nx">FeatureGates</span><span class="p">),</span> <span class="s">&#34;feature-gates&#34;</span><span class="p">,</span> <span class="s">&#34;A set of key=value pairs that describe feature gates for alpha/experimental features. &#34;</span><span class="o">+</span>
+		<span class="s">&#34;Options are:\n&#34;</span><span class="o">+</span><span class="nx">strings</span><span class="p">.</span><span class="nf">Join</span><span class="p">(</span><span class="nx">utilfeature</span><span class="p">.</span><span class="nx">DefaultFeatureGate</span><span class="p">.</span><span class="nf">KnownFeatures</span><span class="p">(),</span> <span class="s">&#34;\n&#34;</span><span class="p">))</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在kubelet启动时候，将指定feature设置保存到DefaultFeatureGate.enabled。</p>
+<ul>
+<li>执行cleanFlagSet.Parse(args)命令行解析&ndash;最终会将命令行参数保存到KubeletConfigure.FeatureGates里。</li>
+<li>执行utilfeature.DefaultMutableFeatureGate.SetFromMap(kubeletConfig.FeatureGates)将kubeletConfig.FeatureGates保存到DefaultFeatureGate。</li>
+<li>如果配置文件设置了FeatureGates，则与命令行的FeatureGates进行合并，出现冲突的以命令行设置为准。</li>
+<li>如果使用dynamic kubeletconfig，且dynamic kubeletconfig 磁盘中存在assigned或last-known-good文件，则与命令行的FeatureGates进行合并，出现冲突的以命令行设置为准。详细的dynamic kubeletconfig分析，后续文章会分析。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go">		<span class="nx">Run</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+			<span class="c1">// initial flag parse, since we disable cobra&#39;s flag parsing
+</span><span class="c1"></span>			<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">cleanFlagSet</span><span class="p">.</span><span class="nf">Parse</span><span class="p">(</span><span class="nx">args</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="nx">cmd</span><span class="p">.</span><span class="nf">Usage</span><span class="p">()</span>
+				<span class="nx">klog</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+			<span class="p">}</span>	
+			<span class="o">......</span><span class="p">.</span>
+			<span class="c1">// set feature gates from initial flags-based config
+</span><span class="c1"></span>			<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">utilfeature</span><span class="p">.</span><span class="nx">DefaultMutableFeatureGate</span><span class="p">.</span><span class="nf">SetFromMap</span><span class="p">(</span><span class="nx">kubeletConfig</span><span class="p">.</span><span class="nx">FeatureGates</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="nx">klog</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+			<span class="p">}</span>
+
+			<span class="c1">// validate the initial KubeletFlags
+</span><span class="c1"></span>			<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">options</span><span class="p">.</span><span class="nf">ValidateKubeletFlags</span><span class="p">(</span><span class="nx">kubeletFlags</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="nx">klog</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+			<span class="p">}</span>
+
+			<span class="k">if</span> <span class="nx">kubeletFlags</span><span class="p">.</span><span class="nx">ContainerRuntime</span> <span class="o">==</span> <span class="s">&#34;remote&#34;</span> <span class="o">&amp;&amp;</span> <span class="nx">cleanFlagSet</span><span class="p">.</span><span class="nf">Changed</span><span class="p">(</span><span class="s">&#34;pod-infra-container-image&#34;</span><span class="p">)</span> <span class="p">{</span>
+				<span class="nx">klog</span><span class="p">.</span><span class="nf">Warning</span><span class="p">(</span><span class="s">&#34;Warning: For remote container runtime, --pod-infra-container-image is ignored in kubelet, which should be set in that remote runtime instead&#34;</span><span class="p">)</span>
+			<span class="p">}</span>
+
+			<span class="c1">// load kubelet config file, if provided
+</span><span class="c1"></span>			<span class="k">if</span> <span class="nx">configFile</span> <span class="o">:=</span> <span class="nx">kubeletFlags</span><span class="p">.</span><span class="nx">KubeletConfigFile</span><span class="p">;</span> <span class="nb">len</span><span class="p">(</span><span class="nx">configFile</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+				<span class="nx">kubeletConfig</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nf">loadConfigFile</span><span class="p">(</span><span class="nx">configFile</span><span class="p">)</span>
+				<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+					<span class="nx">klog</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+				<span class="p">}</span>
+				<span class="c1">// We must enforce flag precedence by re-parsing the command line into the new object.
+</span><span class="c1"></span>				<span class="c1">// This is necessary to preserve backwards-compatibility across binary upgrades.
+</span><span class="c1"></span>				<span class="c1">// See issue #56171 for more details.
+</span><span class="c1"></span>				<span class="c1">// 重新解析args，命令行选项覆盖kubeletConfig里的选项
+</span><span class="c1"></span>				<span class="c1">// 其中FeatureGates为合并
+</span><span class="c1"></span>				<span class="c1">// 忽略Credential、klog、cadvisor选项--这些选项不在kubeletConfig里
+</span><span class="c1"></span>				<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">kubeletConfigFlagPrecedence</span><span class="p">(</span><span class="nx">kubeletConfig</span><span class="p">,</span> <span class="nx">args</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+					<span class="nx">klog</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+				<span class="p">}</span>
+				<span class="c1">// update feature gates based on new config
+</span><span class="c1"></span>				<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">utilfeature</span><span class="p">.</span><span class="nx">DefaultMutableFeatureGate</span><span class="p">.</span><span class="nf">SetFromMap</span><span class="p">(</span><span class="nx">kubeletConfig</span><span class="p">.</span><span class="nx">FeatureGates</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+					<span class="nx">klog</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+				<span class="p">}</span>
+			<span class="p">}</span>
+
+			<span class="c1">// We always validate the local configuration (command line + config file).
+</span><span class="c1"></span>			<span class="c1">// This is the default &#34;last-known-good&#34; config for dynamic config, and must always remain valid.
+</span><span class="c1"></span>			<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">kubeletconfigvalidation</span><span class="p">.</span><span class="nf">ValidateKubeletConfiguration</span><span class="p">(</span><span class="nx">kubeletConfig</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="nx">klog</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+			<span class="p">}</span>
+
+			<span class="c1">// use dynamic kubelet config, if enabled
+</span><span class="c1"></span>			<span class="kd">var</span> <span class="nx">kubeletConfigController</span> <span class="o">*</span><span class="nx">dynamickubeletconfig</span><span class="p">.</span><span class="nx">Controller</span>
+			<span class="k">if</span> <span class="nx">dynamicConfigDir</span> <span class="o">:=</span> <span class="nx">kubeletFlags</span><span class="p">.</span><span class="nx">DynamicConfigDir</span><span class="p">.</span><span class="nf">Value</span><span class="p">();</span> <span class="nb">len</span><span class="p">(</span><span class="nx">dynamicConfigDir</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+				<span class="kd">var</span> <span class="nx">dynamicKubeletConfig</span> <span class="o">*</span><span class="nx">kubeletconfiginternal</span><span class="p">.</span><span class="nx">KubeletConfiguration</span>
+				<span class="nx">dynamicKubeletConfig</span><span class="p">,</span> <span class="nx">kubeletConfigController</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nf">BootstrapKubeletConfigController</span><span class="p">(</span><span class="nx">dynamicConfigDir</span><span class="p">,</span>
+					<span class="kd">func</span><span class="p">(</span><span class="nx">kc</span> <span class="o">*</span><span class="nx">kubeletconfiginternal</span><span class="p">.</span><span class="nx">KubeletConfiguration</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+						<span class="c1">// Here, we enforce flag precedence inside the controller, prior to the controller&#39;s validation sequence,
+</span><span class="c1"></span>						<span class="c1">// so that we get a complete validation at the same point where we can decide to reject dynamic config.
+</span><span class="c1"></span>						<span class="c1">// This fixes the flag-precedence component of issue #63305.
+</span><span class="c1"></span>						<span class="c1">// See issue #56171 for general details on flag precedence.
+</span><span class="c1"></span>						<span class="k">return</span> <span class="nf">kubeletConfigFlagPrecedence</span><span class="p">(</span><span class="nx">kc</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span>
+					<span class="p">})</span>
+				<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+					<span class="nx">klog</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+				<span class="p">}</span>
+				<span class="c1">// If we should just use our existing, local config, the controller will return a nil config
+</span><span class="c1"></span>				<span class="k">if</span> <span class="nx">dynamicKubeletConfig</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+					<span class="nx">kubeletConfig</span> <span class="p">=</span> <span class="nx">dynamicKubeletConfig</span>
+					<span class="c1">// Note: flag precedence was already enforced in the controller, prior to validation,
+</span><span class="c1"></span>					<span class="c1">// by our above transform function. Now we simply update feature gates from the new config.
+</span><span class="c1"></span>					<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">utilfeature</span><span class="p">.</span><span class="nx">DefaultMutableFeatureGate</span><span class="p">.</span><span class="nf">SetFromMap</span><span class="p">(</span><span class="nx">kubeletConfig</span><span class="p">.</span><span class="nx">FeatureGates</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+						<span class="nx">klog</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+					<span class="p">}</span>
+				<span class="p">}</span>
+			<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><strong>SetFromMap</strong></p>
+<p>将kubeletConfig.FeatureGates保存到utilfeature.DefaultFeatureGate中。</p>
+<p>保存的Feature必须保证下面几个条件:</p>
+<ul>
+<li>已知的featureSpec&ndash;在所有已知的FeatureSpec里&ndash;defaultKubernetesFeatureGates。</li>
+<li>不允许修改锁定默认值的FeatureSpec。</li>
+</ul>
+<p>特殊的FeatureSpec:</p>
+<ul>
+<li>AllAlpha将所有已知的FeatureSpec里的alpha阶段且未被明确设置(不在enabled中)FeatureSpec，enabled设置为指定值。</li>
+<li>AllBeta将所有已知的FeatureSpec里的beta阶段且未被明确设置(不在enabled中)FeatureSpec，enabled设置为指定值。</li>
+</ul>
+<p>定义在staging\src\k8s.io\component-base\featuregate\feature_gate.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// SetFromMap stores flag gates for known features from a map[string]bool or returns an error
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <span class="o">*</span><span class="nx">featureGate</span><span class="p">)</span> <span class="nf">SetFromMap</span><span class="p">(</span><span class="nx">m</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">bool</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nx">f</span><span class="p">.</span><span class="nx">lock</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+	<span class="k">defer</span> <span class="nx">f</span><span class="p">.</span><span class="nx">lock</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+
+	<span class="c1">// Copy existing state
+</span><span class="c1"></span>	<span class="nx">known</span> <span class="o">:=</span> <span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="nx">FeatureSpec</span><span class="p">{}</span>
+	<span class="k">for</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">v</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">f</span><span class="p">.</span><span class="nx">known</span><span class="p">.</span><span class="nf">Load</span><span class="p">().(</span><span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="nx">FeatureSpec</span><span class="p">)</span> <span class="p">{</span>
+		<span class="nx">known</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span> <span class="p">=</span> <span class="nx">v</span>
+	<span class="p">}</span>
+	<span class="nx">enabled</span> <span class="o">:=</span> <span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="kt">bool</span><span class="p">{}</span>
+	<span class="k">for</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">v</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">f</span><span class="p">.</span><span class="nx">enabled</span><span class="p">.</span><span class="nf">Load</span><span class="p">().(</span><span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
+		<span class="nx">enabled</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span> <span class="p">=</span> <span class="nx">v</span>
+	<span class="p">}</span>
+
+	<span class="k">for</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">v</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">m</span> <span class="p">{</span>
+		<span class="nx">k</span> <span class="o">:=</span> <span class="nf">Feature</span><span class="p">(</span><span class="nx">k</span><span class="p">)</span>
+        <span class="c1">// 判断是否是已知的featureSpec,不是已知的,直接报错
+</span><span class="c1"></span>		<span class="nx">featureSpec</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">known</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span>
+		<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;unrecognized feature gate: %s&#34;</span><span class="p">,</span> <span class="nx">k</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="nx">featureSpec</span><span class="p">.</span><span class="nx">LockToDefault</span> <span class="o">&amp;&amp;</span> <span class="nx">featureSpec</span><span class="p">.</span><span class="nx">Default</span> <span class="o">!=</span> <span class="nx">v</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;cannot set feature gate %v to %v, feature is locked to %v&#34;</span><span class="p">,</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">featureSpec</span><span class="p">.</span><span class="nx">Default</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="nx">enabled</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span> <span class="p">=</span> <span class="nx">v</span>
+		<span class="c1">// Handle &#34;special&#34; features like &#34;all alpha gates&#34;
+</span><span class="c1"></span>		<span class="c1">// 遇到AllAlpha或AllBeta将enable值改为v
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">fn</span><span class="p">,</span> <span class="nx">found</span> <span class="o">:=</span> <span class="nx">f</span><span class="p">.</span><span class="nx">special</span><span class="p">[</span><span class="nx">k</span><span class="p">];</span> <span class="nx">found</span> <span class="p">{</span>
+			<span class="nf">fn</span><span class="p">(</span><span class="nx">known</span><span class="p">,</span> <span class="nx">enabled</span><span class="p">,</span> <span class="nx">v</span><span class="p">)</span>
+		<span class="p">}</span>
+
+		<span class="k">if</span> <span class="nx">featureSpec</span><span class="p">.</span><span class="nx">PreRelease</span> <span class="o">==</span> <span class="nx">Deprecated</span> <span class="p">{</span>
+			<span class="nx">klog</span><span class="p">.</span><span class="nf">Warningf</span><span class="p">(</span><span class="s">&#34;Setting deprecated feature gate %s=%t. It will be removed in a future release.&#34;</span><span class="p">,</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">v</span><span class="p">)</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">featureSpec</span><span class="p">.</span><span class="nx">PreRelease</span> <span class="o">==</span> <span class="nx">GA</span> <span class="p">{</span>
+			<span class="nx">klog</span><span class="p">.</span><span class="nf">Warningf</span><span class="p">(</span><span class="s">&#34;Setting GA feature gate %s=%t. It will be removed in a future release.&#34;</span><span class="p">,</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">v</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Persist changes
+</span><span class="c1"></span>	<span class="nx">f</span><span class="p">.</span><span class="nx">known</span><span class="p">.</span><span class="nf">Store</span><span class="p">(</span><span class="nx">known</span><span class="p">)</span>
+	<span class="nx">f</span><span class="p">.</span><span class="nx">enabled</span><span class="p">.</span><span class="nf">Store</span><span class="p">(</span><span class="nx">enabled</span><span class="p">)</span>
+
+	<span class="nx">klog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;feature gates: %v&#34;</span><span class="p">,</span> <span class="nx">f</span><span class="p">.</span><span class="nx">enabled</span><span class="p">)</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></td></tr></table>
+</div>
+</div><p><strong>kubeletConfigFlagPrecedence</strong></p>
+<p>重新解析命令行参数，覆盖kubeletConfig配置。</p>
+<ul>
+<li>
+<p>新建一个flagset fs&ndash;只包含KubeletFlags和KubeletConfigFlags和忽略Globalsflag选项。</p>
+</li>
+<li>
+<p>保存原始的kc.FeatureGates。</p>
+</li>
+<li>
+<p>重新解析命令行参数，这里会将命令行FeatureGates参数保存到kc.FeatureGates。</p>
+</li>
+<li>
+<p>聚合原来的kc.FeatureGates和命令行解析后的kc.FeatureGates，当原来的kc.FeatureGates（配置文件中的FeatureGate）不在命令行FeatureGates中，才会添加到kc.FeatureGates&ndash;当命令行FeatureGates与配置文件中的FeatureGates冲突时候，以命令行FeatureGates为准。</p>
+</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// kubeletCosnfigFlagPrecedence re-parses flags over the KubeletConfiguration object.
+</span><span class="c1">// We must enforce flag precedence by re-parsing the command line into the new object.
+</span><span class="c1">// This is necessary to preserve backwards-compatibility across binary upgrades.
+</span><span class="c1">// See issue #56171 for more details.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">kubeletConfigFlagPrecedence</span><span class="p">(</span><span class="nx">kc</span> <span class="o">*</span><span class="nx">kubeletconfiginternal</span><span class="p">.</span><span class="nx">KubeletConfiguration</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="c1">// We use a throwaway kubeletFlags and a fake global flagset to avoid double-parses,
+</span><span class="c1"></span>	<span class="c1">// as some Set implementations accumulate values from multiple flag invocations.
+</span><span class="c1"></span>	<span class="nx">fs</span> <span class="o">:=</span> <span class="nf">newFakeFlagSet</span><span class="p">(</span><span class="nf">newFlagSetWithGlobals</span><span class="p">())</span>
+	<span class="c1">// register throwaway KubeletFlags
+</span><span class="c1"></span>	<span class="nx">options</span><span class="p">.</span><span class="nf">NewKubeletFlags</span><span class="p">().</span><span class="nf">AddFlags</span><span class="p">(</span><span class="nx">fs</span><span class="p">)</span>
+	<span class="c1">// register new KubeletConfiguration
+</span><span class="c1"></span>	<span class="nx">options</span><span class="p">.</span><span class="nf">AddKubeletConfigFlags</span><span class="p">(</span><span class="nx">fs</span><span class="p">,</span> <span class="nx">kc</span><span class="p">)</span>
+	<span class="c1">// Remember original feature gates, so we can merge with flag gates later
+</span><span class="c1"></span>	<span class="nx">original</span> <span class="o">:=</span> <span class="nx">kc</span><span class="p">.</span><span class="nx">FeatureGates</span>
+	<span class="c1">// re-parse flags
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">fs</span><span class="p">.</span><span class="nf">Parse</span><span class="p">(</span><span class="nx">args</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+	<span class="c1">// Add back feature gates that were set in the original kc, but not in flags
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">v</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">original</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">kc</span><span class="p">.</span><span class="nx">FeatureGates</span><span class="p">[</span><span class="nx">k</span><span class="p">];</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+			<span class="nx">kc</span><span class="p">.</span><span class="nx">FeatureGates</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span> <span class="p">=</span> <span class="nx">v</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="使用配置">使用配置</h2>
+<p>以kubelet中的一段代码为例，使用utilfeature.DefaultFeatureGate.Enabled(key Feature) bool来判断是否启用了某个feature。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">import</span> <span class="p">(</span>
+	<span class="nx">utilfeature</span> <span class="s">&#34;k8s.io/apiserver/pkg/util/feature&#34;</span>
+    <span class="nx">features</span> <span class="s">&#34;k8s.io/kubernetes/pkg/features&#34;</span>
+    <span class="o">...</span><span class="p">..</span>
+<span class="p">)</span>
+
+<span class="o">...</span><span class="p">..</span>
+<span class="c1">// If the kubelet config controller is available, and dynamic config is enabled, start the config and status sync loops
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">utilfeature</span><span class="p">.</span><span class="nx">DefaultFeatureGate</span><span class="p">.</span><span class="nf">Enabled</span><span class="p">(</span><span class="nx">features</span><span class="p">.</span><span class="nx">DynamicKubeletConfig</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nb">len</span><span class="p">(</span><span class="nx">s</span><span class="p">.</span><span class="nx">DynamicConfigDir</span><span class="p">.</span><span class="nf">Value</span><span class="p">())</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span>
+		<span class="nx">kubeDeps</span><span class="p">.</span><span class="nx">KubeletConfigController</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="p">!</span><span class="nx">standaloneMode</span> <span class="o">&amp;&amp;</span> <span class="p">!</span><span class="nx">s</span><span class="p">.</span><span class="nx">RunOnce</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">kubeDeps</span><span class="p">.</span><span class="nx">KubeletConfigController</span><span class="p">.</span><span class="nf">StartSync</span><span class="p">(</span><span class="nx">kubeDeps</span><span class="p">.</span><span class="nx">KubeClient</span><span class="p">,</span> <span class="nx">kubeDeps</span><span class="p">.</span><span class="nx">EventClient</span><span class="p">,</span> <span class="nb">string</span><span class="p">(</span><span class="nx">nodeName</span><span class="p">));</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>Enabled判断是否启用某个feature</p>
+<ul>
+<li>首先检查enabled里是否存在这个feature，因为只有明确设置的feature才会保存在这里，剩下所有默认的不会保存在这里。</li>
+<li>判断是否是已知的feature，如果是已知的feature，则返回它的Default设置；否则pannic。</li>
+</ul>
+<p>定义在cmd\kubelet\app\server.go</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// Enabled returns true if the key is enabled.  If the key is not known, this call will panic.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <span class="o">*</span><span class="nx">featureGate</span><span class="p">)</span> <span class="nf">Enabled</span><span class="p">(</span><span class="nx">key</span> <span class="nx">Feature</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">f</span><span class="p">.</span><span class="nx">enabled</span><span class="p">.</span><span class="nf">Load</span><span class="p">().(</span><span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="kt">bool</span><span class="p">)[</span><span class="nx">key</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">v</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">f</span><span class="p">.</span><span class="nx">known</span><span class="p">.</span><span class="nf">Load</span><span class="p">().(</span><span class="kd">map</span><span class="p">[</span><span class="nx">Feature</span><span class="p">]</span><span class="nx">FeatureSpec</span><span class="p">)[</span><span class="nx">key</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">v</span><span class="p">.</span><span class="nx">Default</span>
+	<span class="p">}</span>
+
+	<span class="nb">panic</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;feature %q is not registered in FeatureGate %q&#34;</span><span class="p">,</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">f</span><span class="p">.</span><span class="nx">featureGateName</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div>
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">xiaoqing</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">
+        2021-02-19
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">License</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/kubernetes/">kubernetes</a>
+          <a href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">源码解析</a>
+          <a href="/tags/kubelet/">kubelet</a>
+          </div>
+      <nav class="post-nav">
+        
+        <a class="next" href="/post/kubelet-run-log-init/">
+            <span class="next-text nav-default">kubelet启动--日志初始化</span>
+            <span class="next-text nav-mobile">Next</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:your@email.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://github.com/wu0407" class="iconfont icon-github" title="github"></a>
+  <a href="https://midbai.com/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2020 - 
+    2021<span class="heart"><i class="iconfont icon-heart"></i></span><span>xiaoqing</span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.c12618f9a600c40bd024996677e951e64d3487006775aeb22e200c990006c5c7.js"></script>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-29100285-1', 'auto');
+	ga('set', 'anonymizeIp', true);
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+
+
+
+
+</body>
+</html>

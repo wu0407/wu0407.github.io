@@ -6,7 +6,17 @@
     <description>Recent content in kubernetes on xiaoqing</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Wed, 17 Feb 2021 21:14:20 +0800</lastBuildDate><atom:link href="https://midbai.com/categories/kubernetes/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Fri, 19 Feb 2021 11:21:49 +0800</lastBuildDate><atom:link href="https://midbai.com/categories/kubernetes/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>kubelet启动--FeatureGate初始化</title>
+      <link>https://midbai.com/post/kubelet-run-feature-gate-init/</link>
+      <pubDate>Fri, 19 Feb 2021 11:21:49 +0800</pubDate>
+      
+      <guid>https://midbai.com/post/kubelet-run-feature-gate-init/</guid>
+      <description>&lt;p&gt;kubernetes有很多的功能特性，这些特性一般都有关联的KEP。特性的成熟度有alpha、beta、GA、Deprecated，alpha代表不稳定，beta代表相对稳定有可能有bug，GA代表已经可用。 特性的生命阶段有KEP提出、alpha阶段、beta阶段、GA阶段、废弃。alpha阶段默认不启用，beta阶段默认启用 。更多feature gate相关知识请访问&amp;ndash;&lt;a href=&#34;https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/&#34;&gt;Feature Gates&lt;/a&gt;和&lt;a href=&#34;https://github.com/kubernetes/enhancements/blob/master/keps/sig-architecture/0000-kep-process/README.md&#34;&gt;KEP&lt;/a&gt;。&lt;/p&gt;
+&lt;p&gt;feature gate用来控制某项特性打开或关闭，当然GA的特性不能关闭。本文以kubelet源码为例，分析feature gate如何工作的。&lt;/p&gt;</description>
+    </item>
+    
     <item>
       <title>kubelet启动--日志初始化</title>
       <link>https://midbai.com/post/kubelet-run-log-init/</link>

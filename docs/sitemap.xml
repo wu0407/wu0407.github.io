@@ -3,62 +3,69 @@
   
   <url>
     <loc>https://midbai.com/categories/</loc>
-    <lastmod>2021-02-17T21:14:20+08:00</lastmod>
+    <lastmod>2021-02-19T11:21:49+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://midbai.com/tags/kubelet/</loc>
-    <lastmod>2021-02-17T21:14:20+08:00</lastmod>
+    <lastmod>2021-02-19T11:21:49+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>https://midbai.com/post/kubelet-run-log-init/</loc>
-    <lastmod>2021-02-17T21:14:20+08:00</lastmod>
+    <loc>https://midbai.com/post/kubelet-run-feature-gate-init/</loc>
+    <lastmod>2021-02-19T11:21:49+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://midbai.com/tags/kubernetes/</loc>
-    <lastmod>2021-02-17T21:14:20+08:00</lastmod>
+    <lastmod>2021-02-19T11:21:49+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://midbai.com/categories/kubernetes/</loc>
-    <lastmod>2021-02-17T21:14:20+08:00</lastmod>
+    <lastmod>2021-02-19T11:21:49+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://midbai.com/post/</loc>
-    <lastmod>2021-02-17T21:14:20+08:00</lastmod>
+    <lastmod>2021-02-19T11:21:49+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://midbai.com/tags/</loc>
-    <lastmod>2021-02-17T21:14:20+08:00</lastmod>
+    <lastmod>2021-02-19T11:21:49+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://midbai.com/</loc>
-    <lastmod>2021-02-17T21:14:20+08:00</lastmod>
+    <lastmod>2021-02-19T11:21:49+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://midbai.com/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/</loc>
+    <lastmod>2021-02-19T11:21:49+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://midbai.com/post/kubelet-run-log-init/</loc>
     <lastmod>2021-02-17T21:14:20+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>

@@ -49,7 +49,7 @@
 <meta itemprop="description" content="kubelet启动的时候进行日志klog相关的初始化">
 <meta itemprop="datePublished" content="2021-02-17T21:14:20+08:00" />
 <meta itemprop="dateModified" content="2021-02-17T21:14:20+08:00" />
-<meta itemprop="wordCount" content="2125">
+<meta itemprop="wordCount" content="2159">
 
 
 
@@ -167,6 +167,7 @@
       <p>kubernetes 默认使用的日志库是klog，kubernetes的<code>k8s.io/component-base/logs</code>库，专门做日志初始化相关操作。</p>
 <p>klog是glog的fork版本，由于glog不在开发、在容器中运行有一系列问题、不容易测试等问题，所以kubenetes自己维护了一个klog。</p>
 <p>在1.18版本中使用v1.0.0版本的klog，这个版本的<code>--add_dir_header</code>不生效，在https://github.com/kubernetes/klog/pull/101修复了，但是在1.18中一直存在这个问题，小版本更新一直没有更新klog版本。</p>
+<p>本文基于kubernetes 1.18.6版本，请访问<a href="https://github.com/wu0407/kubernetes-code-analysis">源代码阅读仓库</a>。</p>
 <h2 id="入口文件">入口文件</h2>
 <p>kubelet在main函数中直接调用<code>k8s.io/component-base/logs</code>的InitLogs()初始化日志，并在程序退出时候执行flushlog。</p>
 <p>cmd\kubelet\kubelet.go</p>
@@ -541,7 +542,11 @@
           <a href="/tags/kubelet/">kubelet</a>
           </div>
       <nav class="post-nav">
-        
+        <a class="prev" href="/post/kubelet-run-feature-gate-init/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">kubelet启动--FeatureGate初始化</span>
+            <span class="prev-text nav-mobile">Prev</span>
+          </a>
         <a class="next" href="/post/kubelet-run-command-line-init/">
             <span class="next-text nav-default">kubelet启动--命令行初始化</span>
             <span class="next-text nav-mobile">Next</span>
